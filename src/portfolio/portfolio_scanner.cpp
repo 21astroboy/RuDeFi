@@ -157,10 +157,8 @@ ScanResult PortfolioScanner::scan(const chain::Address& wallet, const ScanOption
         for (std::size_t k = 0; k < futs.size(); ++k) {
             auto& f = futs[k];
             if (f.wait_until(deadline) != std::future_status::ready) {
-                ScanWarning w;
-                w.chain_key = chains[i + k].key;
-                w.message   = "chain timed out (slow public RPC) — skipped";
-                res.warnings.push_back(std::move(w));
+                res.warnings.push_back("[" + chains[i + k].key +
+                                       "] chain timed out (slow public RPC) — skipped");
                 continue;
             }
             auto cr = f.get();
