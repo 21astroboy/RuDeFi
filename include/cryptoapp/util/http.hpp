@@ -16,9 +16,9 @@ struct HttpResponse {
 };
 
 struct HttpClientOptions {
-    std::chrono::milliseconds timeout{std::chrono::milliseconds(8000)};
-    std::chrono::milliseconds connect_timeout{std::chrono::milliseconds(3000)};
-    int max_retries = 2;        // retry transient failures with backoff
+    std::chrono::milliseconds timeout{std::chrono::milliseconds(4000)};
+    std::chrono::milliseconds connect_timeout{std::chrono::milliseconds(2000)};
+    int max_retries = 1;        // retry transient failures with backoff
     bool follow_redirects = true;
     std::string user_agent = "cryptoapp/0.1 (+https://github.com/yourname/cryptoapp)";
 };

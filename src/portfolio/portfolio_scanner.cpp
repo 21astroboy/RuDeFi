@@ -151,7 +151,18 @@ ScanResult PortfolioScanner::scan(const chain::Address& wallet, const ScanOption
                 return scan_chain(cfg, wallet, http_, scan_defi);
             }));
         }
-        for (auto& f : futs) {
+        // Per-chain hard ceiling: 12 seconds. If a chain's RPC is slow, we
+        // skip it with a warning rather than blocking the whole scan.
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(12);
+        for (std::size_t k = 0; k < futs.size(); ++k) {
+            auto& f = futs[k];
+            if (f.wait_until(deadline) != std::future_status::ready) {
+                ScanWarning w;
+                w.chain_key = chains[i + k].key;
+                w.message   = "chain timed out (slow public RPC) — skipped";
+                res.warnings.push_back(std::move(w));
+                continue;
+            }
             auto cr = f.get();
             for (auto& h : cr.holdings) res.holdings.push_back(std::move(h));
             for (auto& p : cr.defi_positions) res.defi_positions.push_back(std::move(p));

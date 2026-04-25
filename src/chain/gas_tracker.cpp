@@ -68,7 +68,20 @@ std::vector<GasInfo> GasTracker::snapshot() {
 
     std::vector<GasInfo> result;
     result.reserve(chains.size());
-    for (auto& f : futs) result.push_back(f.get());
+    const auto deadline = now + std::chrono::seconds(6);
+    for (std::size_t i = 0; i < futs.size(); ++i) {
+        if (futs[i].wait_until(deadline) == std::future_status::ready) {
+            result.push_back(futs[i].get());
+        } else {
+            GasInfo info;
+            info.chain_key    = chains[i].key;
+            info.chain_name   = chains[i].name;
+            info.native_symbol = chains[i].native_symbol;
+            info.error        = "timeout";
+            info.level        = "unknown";
+            result.push_back(std::move(info));
+        }
+    }
 
     std::lock_guard<std::mutex> lk(mtx_);
     cached_ = result;
