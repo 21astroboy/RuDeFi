@@ -482,6 +482,17 @@ HttpServer::~HttpServer() = default;
 
 void HttpServer::run() {
     const auto& o = impl_->opts;
+    // Bump httplib's thread pool. Default is std::thread::hardware_concurrency()
+    // which on Render free is reported as 1-2 — that means a single slow
+    // /api/scan request will block /api/healthz and Render kills the
+    // container as unhealthy. 16 workers is plenty for a few concurrent users
+    // while keeping memory under 100 MB extra.
+    impl_->srv.new_task_queue = [] { return new httplib::ThreadPool(16); };
+    impl_->srv.set_keep_alive_max_count(50);
+    impl_->srv.set_keep_alive_timeout(15);
+    impl_->srv.set_read_timeout(30, 0);
+    impl_->srv.set_write_timeout(30, 0);
+
     std::cerr << "cryptoapp listening on http://" << o.bind_addr << ":" << o.port << "\n";
     if (!o.ui_dir.empty()) {
         std::cerr << "  UI: open http://" << o.bind_addr << ":" << o.port << "/\n";
