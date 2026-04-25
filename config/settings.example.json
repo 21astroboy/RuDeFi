@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this to settings.json and fill in. None of these are required for the MVP.",
+  "alchemy_api_key": "",
+  "infura_api_key": "",
+  "coingecko_api_key": "",
+  "request_timeout_ms": 8000,
+  "concurrent_requests": 8
+}

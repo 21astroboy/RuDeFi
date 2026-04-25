@@ -1,0 +1,29 @@
+# Fly.io config (https://fly.io). Deploy:  fly launch  →  fly deploy
+# Free tier: shared-cpu-1x, 256 MB RAM, 3 GB storage. Enough for this app.
+app = "defi-dashboard"
+primary_region = "fra"   # Frankfurt — change if you have a closer region
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"     # free tier: machines suspend after idle
+  auto_start_machines = true      # wake on incoming request
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/healthz"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

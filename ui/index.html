@@ -1,0 +1,3530 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>cryptoapp — портфель</title>
+  <style>
+    :root {
+      --bg: #0a0d13;
+      --bg-grad-1: #0e1320;
+      --bg-grad-2: #090b11;
+      --panel: #121724;
+      --panel-2: #1a2030;
+      --panel-3: #232b3e;
+      --border: #232936;
+      --border-soft: #1a2030;
+      --fg: #e8ebf2;
+      --fg-soft: #c1c8d6;
+      --muted: #7c8497;
+      --accent: #6ea8fe;
+      --accent-2: #5d8ee8;
+      --green: #6ddf8e;
+      --red: #ff7a7a;
+      --warn: #f0c674;
+
+      --chain-ethereum:  #627eea;
+      --chain-arbitrum:  #28a0f0;
+      --chain-optimism:  #ff0420;
+      --chain-base:      #0052ff;
+      --chain-polygon:   #8247e5;
+      --chain-bnb:       #f3ba2f;
+      --chain-avalanche: #e84142;
+      --chain-gnosis:    #04795b;
+      --chain-linea:     #61dfff;
+      --chain-scroll:    #ffeeda;
+      --chain-blast:     #fcfc03;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background:
+        radial-gradient(1200px 600px at 80% -20%, rgba(110,168,254,0.08), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(130,71,229,0.06), transparent 60%),
+        linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+      background-attachment: fixed;
+      color: var(--fg);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 22px 96px; }
+
+    header { display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.2px;
+      display: flex; align-items: center; gap: 10px; }
+    h1 .logo {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, #6ea8fe, #8247e5);
+      display: inline-grid; place-items: center;
+      box-shadow: 0 4px 14px rgba(110,168,254,0.25);
+    }
+    h1 .logo svg { width: 16px; height: 16px; }
+    h1 .dim { color: var(--muted); font-weight: 400; }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    }
+    .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .row > * { flex: 0 0 auto; }
+    .grow { flex: 1 1 auto; }
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .pill {
+      background: var(--panel-3); border: 1px solid var(--border); border-radius: 999px;
+      padding: 4px 12px; font-size: 12px; color: var(--muted);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .pill .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 6px rgba(109,223,142,0.6);
+    }
+    .pill.idle .dot { background: var(--muted); box-shadow: none; }
+
+    button {
+      background: var(--panel-3); color: var(--fg); border: 1px solid var(--border);
+      padding: 9px 16px; border-radius: 9px; font: inherit; cursor: pointer;
+      transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 8px;
+    }
+    button:hover { border-color: var(--accent); transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #0a0d13; border-color: transparent;
+      font-weight: 600;
+      box-shadow: 0 2px 14px rgba(110,168,254,0.35);
+    }
+    button.primary:hover { filter: brightness(1.08); box-shadow: 0 4px 20px rgba(110,168,254,0.5); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    input.addr {
+      flex: 1 1 320px;
+      background: var(--panel-3); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 9px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px; min-width: 0;
+      transition: border-color 0.15s ease;
+    }
+    input.addr:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(110,168,254,0.15); }
+    input.addr::placeholder { color: var(--muted); }
+
+    label.toggle {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; color: var(--muted);
+      user-select: none; cursor: pointer;
+    }
+    label.toggle input[type=checkbox] { accent-color: var(--accent); }
+
+    .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 720px) { .totals { grid-template-columns: 1fr; } }
+    .stat {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      position: relative; overflow: hidden;
+    }
+    .stat::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(400px 200px at 100% 0%, rgba(110,168,254,0.08), transparent 60%);
+      pointer-events: none;
+    }
+    .stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 500; }
+    .stat .value { font-size: 26px; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+    .stat .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 14px 14px 12px; font-weight: 500;
+      color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+      border-bottom: 1px solid var(--border); position: sticky; top: 0;
+      background: var(--panel); }
+    td { padding: 14px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.holding-row { transition: background 0.15s ease; }
+    tr.holding-row:hover { background: rgba(255,255,255,0.025); }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .token { display: flex; align-items: center; gap: 10px; }
+    .token-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--panel-3);
+      display: inline-grid; place-items: center;
+      flex: 0 0 auto;
+      overflow: hidden;
+      position: relative;
+      font-weight: 600; font-size: 11px;
+      letter-spacing: 0.3px;
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .token-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .token-icon.fallback {
+      background: linear-gradient(135deg, var(--c1, #444), var(--c2, #222));
+      color: white;
+    }
+    .token-name { font-weight: 600; }
+    .token-sub { color: var(--muted); font-size: 11px; }
+
+    .chain-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px 4px 4px;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 11px; font-weight: 500;
+      color: var(--fg-soft);
+    }
+    .chain-tag .chain-icon {
+      width: 18px; height: 18px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      flex: 0 0 auto;
+    }
+    .chain-tag .chain-icon svg { width: 18px; height: 18px; }
+
+    /* Pill-style chain selector for the Liquidations tab. */
+    .chain-pills { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .chain-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px 5px 6px;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px; font-weight: 500;
+      color: var(--fg-soft);
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .1s ease;
+    }
+    .chain-pill .chain-icon { width: 18px; height: 18px; border-radius: 50%;
+      display: inline-grid; place-items: center; flex: 0 0 auto; }
+    .chain-pill .chain-icon svg { width: 18px; height: 18px; }
+    .chain-pill:hover { background: var(--panel-2); }
+    .chain-pill.active {
+      background: rgba(99, 145, 255, 0.10);
+      border-color: var(--accent);
+      color: var(--fg);
+      box-shadow: 0 0 0 2px rgba(99, 145, 255, 0.18);
+    }
+    .chain-pill .pill-count {
+      font-size: 10px; color: var(--muted); margin-left: 2px;
+      background: var(--panel-1); padding: 1px 6px; border-radius: 10px;
+    }
+    .chain-pill.active .pill-count { background: var(--accent); color: #0a0d13; }
+
+    /* Segmented control — group of pill buttons that act like radio. */
+    .seg-group { display: inline-flex; flex-wrap: wrap; gap: 0;
+      background: var(--panel-3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 3px; }
+    .seg-btn {
+      padding: 6px 14px;
+      background: transparent; border: 1px solid transparent; border-radius: 7px;
+      font-size: 12px; font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .15s ease, color .15s ease;
+      white-space: nowrap;
+    }
+    .seg-btn:hover { color: var(--fg-soft); background: rgba(255,255,255,0.04); }
+    .seg-btn.active {
+      background: rgba(99,145,255,0.18);
+      color: var(--fg);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(99,145,255,0.25);
+    }
+
+    .ctrl-block {
+      display: inline-flex; flex-direction: column; gap: 6px;
+      padding: 10px 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .ctrl-label {
+      display: flex; gap: 8px; align-items: center;
+      font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--muted); font-weight: 600;
+    }
+    .ctrl-label .help {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--panel-3); border: 1px solid var(--border);
+      display: inline-grid; place-items: center;
+      font-size: 9px; color: var(--muted); cursor: help;
+    }
+    .ctrl-hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    .alloc-bar-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .alloc-bar { width: 70px; height: 3px; border-radius: 2px;
+      background: var(--border-soft); overflow: hidden; }
+    .alloc-bar > span {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--chain-polygon));
+      transition: width 0.4s ease;
+    }
+
+    .empty, .error, .loading { padding: 36px; text-align: center; color: var(--muted); font-size: 14px; }
+    .error { color: var(--red); }
+    .skeleton-row td { padding: 14px; }
+    .sk { display: inline-block; height: 14px; border-radius: 4px;
+      background: linear-gradient(90deg, var(--panel-2) 0%, var(--panel-3) 50%, var(--panel-2) 100%);
+      background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    .warn-list {
+      margin: 0 0 12px; padding: 10px 14px;
+      background: rgba(240, 198, 116, 0.08);
+      border: 1px solid rgba(240, 198, 116, 0.25);
+      border-radius: 8px;
+      color: var(--warn); font-size: 12px;
+      list-style: none;
+    }
+    .warn-list li { padding: 2px 0; word-break: break-word; }
+    .warn-list li::before { content: '⚠ '; opacity: 0.7; }
+    .warn-list details { display: inline; }
+    .warn-list summary { cursor: pointer; user-select: none; outline: none; }
+    .warn-list summary::-webkit-details-marker { display: none; }
+    .warn-list summary::after { content: ' · подробнее ↓'; opacity: 0.6; font-size: 11px; }
+    .warn-list details[open] summary::after { content: ' · скрыть ↑'; }
+    .warn-list pre.full-warn {
+      margin: 6px 0 0; padding: 8px 10px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      font-size: 11px; max-height: 160px; overflow: auto;
+      white-space: pre-wrap; word-break: break-word;
+      color: var(--muted);
+    }
+
+    .holding-row { animation: rowIn 0.4s ease-out; }
+    @keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- Bridges tab ---------- */
+    .bridge-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: start;       /* labels align at top, inputs all on the same line */
+    }
+    .bridge-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .bridge-form .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; min-height: 14px; }
+    /* "Найти маршрут" lives in the same grid as the selects — push it down so
+       its top edge lines up with the inputs (label height + gap). */
+    .bridge-form > button.primary { margin-top: 20px; }
+    .bridge-form select, .bridge-form input {
+      background: var(--panel-3); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 9px 12px; font: inherit; font-size: 13px;
+      width: 100%; min-width: 0;
+    }
+    .bridge-form select:focus, .bridge-form input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(110,168,254,0.15);
+    }
+    .bridge-arrow { text-align: center; color: var(--muted); font-size: 18px; padding: 8px 0; }
+    .bridge-balance {
+      font-size: 11px; color: var(--muted); margin-top: 4px;
+      display: flex; gap: 6px; align-items: center;
+    }
+    .bridge-balance.has-balance { color: var(--fg-soft); }
+    .bridge-balance .max-btn {
+      background: var(--panel-3); border: 1px solid var(--border);
+      color: var(--accent); border-radius: 5px;
+      padding: 1px 7px; font-size: 10px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.4px;
+    }
+    .bridge-balance .max-btn:hover { background: var(--accent); color: #0a0d13; border-color: var(--accent); }
+    @media (max-width: 720px) {
+      .bridge-form { grid-template-columns: 1fr; }
+    }
+
+    .bridge-route {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-soft);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+    .bridge-route:last-child { border-bottom: none; }
+    .bridge-route-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+    .bridge-route-amounts {
+      font-variant-numeric: tabular-nums;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .bridge-route-amounts .from-side {
+      color: var(--muted); font-size: 13px;
+    }
+    .bridge-route-amounts .arrow {
+      color: var(--muted); font-size: 16px; padding: 0 4px;
+    }
+    .bridge-route-amounts .to-side {
+      font-size: 16px; font-weight: 600; color: var(--fg);
+    }
+    .bridge-route-amounts .to-fiat {
+      font-size: 12px; color: var(--muted); font-weight: 400;
+    }
+    .bridge-route-meta {
+      font-size: 11px; color: var(--muted); margin-top: 6px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .bridge-route-meta .loss { color: var(--warn); }
+    .bridge-route-meta .loss.big { color: var(--red); }
+    .bridge-route-cost {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      min-width: 130px;
+    }
+    .bridge-route-cost .gas-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .bridge-route-cost .gas-amt { font-weight: 600; font-size: 13px; }
+    .bridge-route-cost .sub { font-size: 11px; color: var(--muted); }
+    @media (max-width: 720px) {
+      .bridge-route { grid-template-columns: 1fr; }
+      .bridge-route-cost { text-align: left; }
+    }
+    .swap-btn {
+      margin-top: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0a0d13; border: none; padding: 7px 14px;
+      border-radius: 8px; font: inherit; font-weight: 600; font-size: 12px;
+      cursor: pointer; letter-spacing: 0.2px;
+    }
+    .swap-btn:hover { filter: brightness(1.08); }
+    .swap-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4); }
+
+    /* ---------- Swap progress modal ---------- */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(3px);
+      display: grid; place-items: center;
+      z-index: 100;
+    }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      width: min(480px, 92vw);
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+    }
+    .modal h3 { margin: 0 0 14px; font-size: 16px; }
+    .modal .step { display: flex; gap: 10px; padding: 10px 0;
+      border-top: 1px solid var(--border-soft); align-items: flex-start; }
+    .modal .step:first-of-type { border-top: none; }
+    .modal .step .dot {
+      width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto;
+      background: var(--panel-3); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 11px;
+      margin-top: 1px;
+    }
+    .modal .step.active .dot {
+      border-color: var(--accent); color: var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .modal .step.done .dot { background: var(--green); border-color: var(--green); color: #0a0d13; }
+    .modal .step.error .dot { background: var(--red); border-color: var(--red); color: #0a0d13; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(110,168,254,0.18); } }
+    .modal .step .body { flex: 1; min-width: 0; }
+    .modal .step .title { font-weight: 500; font-size: 13px; }
+    .modal .step .detail { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
+    .modal .step.error .detail { color: var(--red); }
+    .modal .modal-actions { margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end; }
+    .bridge-tag {
+      display: inline-block; padding: 3px 8px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .bridge-tag.t-RECOMMENDED { background: rgba(110,168,254,0.15); color: var(--accent); }
+    .bridge-tag.t-CHEAPEST    { background: rgba(109,223,142,0.15); color: var(--green); }
+    .bridge-tag.t-FASTEST     { background: rgba(240,198,116,0.15); color: var(--warn); }
+    .bridge-tag.t-SAFEST      { background: rgba(124,132,151,0.15); color: var(--muted); }
+
+    /* ---------- Yield tab ---------- */
+    .yield-filters {
+      display: flex; gap: 14px; flex-wrap: wrap; align-items: end;
+    }
+    .yield-filters .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .yield-filters .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .yield-filters input[type=number] {
+      background: var(--panel-3); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 10px; font: inherit; font-size: 13px; width: 110px;
+      font-variant-numeric: tabular-nums;
+    }
+    .yield-filters input[type=number]:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(110,168,254,0.15);
+    }
+    .yield-filters label.toggle { padding: 8px 0; }
+
+    .apy-cell { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .apy-cell.high   { color: var(--green); }
+    .apy-cell.med    { color: var(--warn); }
+    .apy-cell.low    { color: var(--muted); }
+    .apy-sub { font-size: 11px; color: var(--muted); font-weight: 400; display: block; }
+    .risk-tag {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .risk-tag.r-no    { background: rgba(109,223,142,0.12); color: var(--green); }
+    .risk-tag.r-yes   { background: rgba(255,122,122,0.12); color: var(--red); }
+    .risk-tag.r-stable { background: rgba(110,168,254,0.12); color: var(--accent); }
+    .risk-tag.r-multi  { background: rgba(124,132,151,0.15); color: var(--muted); }
+    /* Highlight pools where the user actually owns the underlying token. */
+    tr.holding-row.owned td { background: linear-gradient(90deg, rgba(110,168,254,0.05) 0%, transparent 100%); }
+    tr.holding-row.owned:hover td { background: linear-gradient(90deg, rgba(110,168,254,0.10) 0%, rgba(255,255,255,0.025) 100%); }
+
+    /* ---------- Gas tracker bar ---------- */
+    .gas-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 10px 14px; margin-bottom: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .gas-bar .gas-label {
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      align-self: center; margin-right: 4px;
+    }
+    .gas-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--panel-2); border: 1px solid var(--border);
+      font-size: 12px; font-variant-numeric: tabular-nums;
+    }
+    .gas-pill .chain-icon { width: 14px; height: 14px; }
+    .gas-pill .gas-num { font-weight: 600; }
+    .gas-pill.lvl-low    { border-color: rgba(109,223,142,0.4); }
+    .gas-pill.lvl-low    .gas-num    { color: var(--green); }
+    .gas-pill.lvl-medium { border-color: rgba(240,198,116,0.4); }
+    .gas-pill.lvl-medium .gas-num    { color: var(--warn); }
+    .gas-pill.lvl-high   { border-color: rgba(255,122,122,0.5); }
+    .gas-pill.lvl-high   .gas-num    { color: var(--red); }
+    .gas-pill.lvl-unknown .gas-num   { color: var(--muted); }
+
+    /* ---------- Tabs ---------- */
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 14px;
+      padding: 4px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: fit-content;
+    }
+    .tab {
+      background: transparent; border: 0; padding: 8px 18px;
+      color: var(--muted); font: inherit; font-weight: 500;
+      border-radius: 9px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .tab:hover { color: var(--fg-soft); }
+    .tab.active {
+      background: var(--panel-3);
+      color: var(--fg);
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+    .tab-count {
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--muted);
+      min-width: 18px; text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .tab.active .tab-count { background: var(--accent); color: #0a0d13; }
+    .tab-pane[hidden] { display: none; }
+
+    .defi-header { display: flex; align-items: baseline; justify-content: space-between; margin: -4px 0 12px; gap: 12px; flex-wrap: wrap; }
+    .defi-header h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.2px; }
+    .defi-sub { font-size: 12px; }
+    .defi-row {
+      display: grid;
+      grid-template-columns: 130px 130px 1fr auto;
+      gap: 14px;
+      padding: 12px 4px;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+    }
+    .defi-row:last-child { border-bottom: none; }
+    .defi-row .protocol-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--panel-3); border: 1px solid var(--border);
+      font-size: 11px; font-weight: 500;
+    }
+    .defi-row .kind-tag {
+      display: inline-block;
+      padding: 3px 8px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .defi-row .kind-supply  { background: rgba(109,223,142,0.12); color: var(--green); }
+    .defi-row .kind-borrow  { background: rgba(255,122,122,0.10); color: var(--red); }
+    .defi-row .kind-lp      { background: rgba(110,168,254,0.12); color: var(--accent); }
+    .defi-row .kind-summary { background: rgba(124,132,151,0.15); color: var(--muted); }
+    .defi-row .label { color: var(--fg-soft); font-size: 13px; }
+    .defi-row .value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; min-width: 100px; }
+    .defi-row .value .sub { font-size: 11px; color: var(--muted); font-weight: 400; display: block; }
+    .defi-row a.tiny-link { font-size: 11px; color: var(--muted); }
+    .defi-row a.tiny-link:hover { color: var(--accent); }
+    @media (max-width: 720px) {
+      .defi-row { grid-template-columns: 1fr; gap: 8px; }
+      .defi-row .value { text-align: left; }
+    }
+
+    /* ---------- Idle money banner ---------- */
+    .idle-banner {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 14px 16px; margin-bottom: 14px;
+      background: linear-gradient(135deg, rgba(109,223,142,0.08) 0%, rgba(110,168,254,0.08) 100%);
+      border: 1px solid rgba(109,223,142,0.25);
+      border-radius: 10px;
+    }
+    .idle-banner .emoji { font-size: 22px; flex: 0 0 auto; }
+    .idle-banner .text { flex: 1 1 220px; min-width: 0; font-size: 13px; line-height: 1.4; }
+    .idle-banner .text strong { color: var(--green); font-size: 14px; }
+    .idle-banner button {
+      background: var(--accent); color: #0a0d13; border: none;
+      padding: 7px 14px; border-radius: 8px; font: inherit; font-weight: 600;
+      cursor: pointer; font-size: 12px;
+    }
+
+    /* ---------- Health Factor warning toast ---------- */
+    .hf-toast {
+      position: fixed; right: 20px; bottom: 20px;
+      max-width: 360px; padding: 14px 16px;
+      background: var(--panel); color: var(--fg);
+      border: 1px solid var(--red);
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(255,122,122,0.4);
+      z-index: 50; cursor: pointer;
+      animation: slideIn 0.3s ease-out;
+    }
+    .hf-toast.warn { border-color: var(--warn); box-shadow: 0 8px 30px rgba(240,198,116,0.4); }
+    .hf-toast .title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .hf-toast .body { font-size: 12px; color: var(--fg-soft); }
+    @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    /* ---------- History tab ---------- */
+    .hist-ranges {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .hist-range-btn {
+      background: var(--panel-3); border: 1px solid var(--border);
+      color: var(--fg-soft); padding: 6px 12px; border-radius: 7px;
+      font-size: 12px; cursor: pointer; font: inherit; font-weight: 500;
+    }
+    .hist-range-btn.active {
+      background: var(--accent); color: #0a0d13; border-color: var(--accent);
+    }
+    .hist-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin: 14px 0;
+    }
+    @media (max-width: 720px) { .hist-stats { grid-template-columns: 1fr 1fr; } }
+    .hist-stat {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .hist-stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .hist-stat .val   { font-size: 18px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .hist-stat .delta { font-size: 11px; margin-top: 2px; }
+    .hist-stat .delta.pos { color: var(--green); }
+    .hist-stat .delta.neg { color: var(--red); }
+    #histCanvas {
+      width: 100%; height: 300px;
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border); border-radius: 10px;
+      display: block;
+    }
+
+    /* ---------- Yield optimizer ---------- */
+    .opt-summary {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 720px) { .opt-summary { grid-template-columns: 1fr; } }
+    .opt-stat {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 18px;
+    }
+    .opt-stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .opt-stat .val { font-size: 22px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+    .opt-stat .delta { font-size: 12px; margin-top: 4px; }
+    .opt-stat .delta.pos { color: var(--green); }
+    .opt-stat .delta.neg { color: var(--red); }
+    .opt-stat.highlight {
+      border-color: rgba(109,223,142,0.4);
+      box-shadow: 0 4px 24px rgba(109,223,142,0.12);
+    }
+
+    .opt-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 14px;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+    }
+    .opt-row:last-child { border-bottom: none; }
+    .opt-row .arrow-from-to {
+      display: flex; align-items: center; gap: 8px; font-size: 13px;
+    }
+    .opt-row .arrow-from-to .step { color: var(--muted); padding: 0 4px; }
+    .opt-row .opt-gain {
+      text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .opt-row .opt-gain .big {
+      color: var(--green); font-weight: 600; font-size: 14px;
+    }
+    .opt-row .opt-gain .sub { color: var(--muted); font-size: 11px; }
+    .opt-row .breakeven {
+      font-size: 11px; color: var(--muted); margin-top: 3px;
+    }
+    .opt-row .breakeven.fast { color: var(--green); }
+    .opt-row .breakeven.slow { color: var(--warn); }
+
+    /* ---------- Security badge / risk pill ---------- */
+    .sec-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 500;
+    }
+    .sec-pill.ok   { background: rgba(109,223,142,0.10); color: var(--green); border: 1px solid rgba(109,223,142,0.35); }
+    .sec-pill.warn { background: rgba(240,198,116,0.10); color: var(--warn);  border: 1px solid rgba(240,198,116,0.40); }
+    .sec-pill.bad  { background: rgba(255,122,122,0.10); color: var(--red);   border: 1px solid rgba(255,122,122,0.50); }
+
+    .footer-note { color: var(--muted); font-size: 12px; margin-top: 18px; text-align: center; }
+    .footer-note .mono { color: var(--fg-soft); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>
+      <span class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </span>
+      cryptoapp <span class="dim">— портфель по всем сетям</span>
+    </h1>
+    <span id="status" class="pill idle"><span class="dot"></span><span id="statusText">не подключён</span></span>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <button id="connectBtn" class="primary">Подключить MetaMask</button>
+      <input id="addrInput" class="addr" placeholder="или вставь 0x… адрес вручную" />
+      <button id="scanBtn">Сканировать</button>
+      <span class="grow"></span>
+      <label class="toggle"><input type="checkbox" id="includeZero" /> показать нулевые</label>
+      <span id="lastUpdated" class="pill" style="display:none;"></span>
+    </div>
+  </div>
+
+  <div id="totals" class="totals" style="display:none;">
+    <div class="stat"><div class="label">USD</div><div class="value" id="totalUsd">—</div></div>
+    <div class="stat"><div class="label">RUB</div><div class="value" id="totalRub">—</div></div>
+    <div class="stat">
+      <div class="label">Курс ЦБ РФ</div>
+      <div class="value" id="usdRub">—</div>
+      <div class="sub">обновляется раз в сутки</div>
+    </div>
+  </div>
+
+  <div id="gasBar" class="gas-bar">
+    <span class="gas-label">газ сейчас</span>
+    <span class="muted" style="font-size:12px;">загрузка…</span>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="holdings">
+      Активы <span class="tab-count" id="cntHoldings">0</span>
+    </button>
+    <button class="tab" data-tab="defi">
+      DeFi позиции <span class="tab-count" id="cntDefi">0</span>
+    </button>
+    <button class="tab" data-tab="bridge">Обмен</button>
+    <button class="tab" data-tab="yield">Заработок</button>
+    <button class="tab" data-tab="approvals">Approvals</button>
+  </nav>
+
+  <section class="tab-pane" data-pane="holdings">
+    <div id="idleBanner"></div>
+    <div id="result" class="card">
+      <div class="empty">Подключи MetaMask или введи адрес — увидишь токены по всем сетям.</div>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="defi" hidden>
+    <div id="defi" class="card">
+      <div class="defi-header">
+        <h2>DeFi позиции</h2>
+        <span class="muted defi-sub" id="defiSubtitle"></span>
+      </div>
+      <div id="defiBody">
+        <div class="empty">Здесь появятся позиции в Aave V3 и Uniswap V3, как только сделаешь скан.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="bridge" hidden>
+    <div class="card">
+      <div class="defi-header">
+        <h2>Обмен токенов</h2>
+        <span class="muted defi-sub">внутри одной сети (DEX-агрегатор) или между сетями (мосты) — через LiFi</span>
+      </div>
+      <div id="mevBanner" style="margin-bottom:10px;"></div>
+      <div class="bridge-form">
+        <div class="field">
+          <label>Из сети</label>
+          <select id="bridgeFromChain"></select>
+        </div>
+        <div class="field">
+          <label>Токен</label>
+          <select id="bridgeFromToken"></select>
+        </div>
+        <div class="field">
+          <label>Сумма</label>
+          <input id="bridgeAmount" type="number" step="0.000001" placeholder="100" inputmode="decimal" />
+          <div id="bridgeBalance" class="bridge-balance"></div>
+        </div>
+        <div class="field" style="visibility:hidden;"><label>·</label><input /></div>
+      </div>
+      <div class="bridge-arrow">↓</div>
+      <div class="bridge-form">
+        <div class="field">
+          <label>В сеть</label>
+          <select id="bridgeToChain"></select>
+        </div>
+        <div class="field">
+          <label>Токен</label>
+          <select id="bridgeToToken"></select>
+          <div id="bridgeToSecurity" class="bridge-balance"></div>
+        </div>
+        <div class="field" style="visibility:hidden;"><label>·</label><input /></div>
+        <button id="bridgeQuoteBtn" class="primary" type="button">Найти маршрут</button>
+      </div>
+    </div>
+
+    <div id="bridgeResult" class="card">
+      <div class="empty">Заполни форму и нажми «Найти маршрут».</div>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="yield" hidden>
+    <div id="yieldOptimizer" class="card" style="display:none;">
+      <div class="defi-header">
+        <h2>Оптимизация портфеля</h2>
+        <span class="muted defi-sub">сравниваем твои позиции с лучшими безопасными альтернативами</span>
+      </div>
+      <div id="optimizerBody"></div>
+    </div>
+
+    <div class="card">
+      <div class="defi-header">
+        <h2>Где заработать на твоих токенах</h2>
+        <span class="muted defi-sub">пулы, стейкинг, лендинги · DeFiLlama, &gt;10k пулов</span>
+      </div>
+      <div class="yield-filters">
+        <label class="toggle">
+          <input type="checkbox" id="yldOnlyMyTokens" checked /> только мои токены
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="yldOnlyMyChains" checked /> только мои сети
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="yldStableOnly" /> только стейблы
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="yldNoIL" checked /> без IL-риска
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="yldSingleOnly" /> single-exposure
+        </label>
+        <div class="field">
+          <label>Min TVL, $</label>
+          <input id="yldMinTvl" type="number" value="1000000" step="100000" />
+        </div>
+        <div class="field">
+          <label>Min APY, %</label>
+          <input id="yldMinApy" type="number" value="2" step="0.5" />
+        </div>
+        <button id="yldRefresh" class="primary" type="button">Обновить</button>
+      </div>
+    </div>
+
+    <div id="yieldResult" class="card">
+      <div class="empty">Нажми «Обновить» — подтянем актуальные APY.</div>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="approvals" hidden>
+    <div class="card">
+      <div class="defi-header">
+        <h2>Активные approvals</h2>
+        <span class="muted defi-sub">кому ты разрешил списывать твои токены — ревокни всё лишнее</span>
+      </div>
+      <div class="row">
+        <button id="apprRefresh" class="primary" type="button">Обновить</button>
+        <span class="grow"></span>
+        <span class="muted" style="font-size:11px">
+          Сканируем по списку известных DEX/мостов. Не находит approvals для никому-неизвестных DApps —
+          для full-coverage используй <a href="https://revoke.cash/" target="_blank" rel="noopener">revoke.cash</a>.
+        </span>
+      </div>
+    </div>
+    <div id="apprResult" class="card">
+      <div class="empty">Нажми «Обновить» чтобы просканировать.</div>
+    </div>
+  </section>
+
+  <div class="footer-note">
+    API: <span class="mono">GET /api/scan?wallet=0x…</span> ·
+    цены CoinGecko · RUB — ЦБ РФ ·
+    иконки TrustWallet
+  </div>
+</div>
+
+<script>
+  // Surface any runtime error that would otherwise silently halt the rest
+  // of the script — without this, a single ReferenceError early on bricks
+  // gas refresh, wallet restore, yield refresh, etc.
+  window.addEventListener('error', (ev) => {
+    console.error('[crypto-app] script error:', ev.error || ev.message);
+  });
+  window.addEventListener('unhandledrejection', (ev) => {
+    console.error('[crypto-app] unhandled rejection:', ev.reason);
+  });
+
+  const API_BASE = location.origin === 'null' || !location.origin
+    ? 'http://127.0.0.1:8787'
+    : location.origin;
+
+  const $ = (id) => document.getElementById(id);
+
+  function fmtMoney(v, currency) {
+    if (v == null || isNaN(v)) return '—';
+    const opts = currency === 'USD'
+      ? { style: 'currency', currency: 'USD', maximumFractionDigits: v < 1 ? 4 : 2 }
+      : currency === 'RUB'
+        ? { style: 'currency', currency: 'RUB', maximumFractionDigits: v < 1 ? 4 : 2 }
+        : { maximumFractionDigits: 6 };
+    try { return new Intl.NumberFormat('ru-RU', opts).format(v); }
+    catch (e) { return String(v); }
+  }
+  function fmtNumber(v, max=6) {
+    if (v == null) return '—';
+    const n = typeof v === 'string' ? Number(v) : v;
+    if (isNaN(n)) return v;
+    return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: max }).format(n);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  // Warnings often arrive as concatenated JSON-RPC error dumps. Pull out a
+  // short human summary, keep the full payload available behind a <details>.
+  function formatWarning(raw) {
+    const s = String(raw);
+    // Try to peel the leading "[chain] context: " prefix.
+    const m = s.match(/^(\[[^\]]+\][^:]*:)\s*(.*)$/s);
+    const prefix = m ? m[1] : '';
+    let rest = m ? m[2] : s;
+
+    // If the rest is (or contains) a JSON RPC error object, extract `.message`.
+    let summary = rest;
+    const jsonStart = rest.indexOf('{');
+    if (jsonStart >= 0) {
+      try {
+        const parsed = JSON.parse(rest.slice(jsonStart));
+        if (parsed && typeof parsed === 'object' && parsed.message) {
+          summary = String(parsed.message);
+        }
+      } catch (_) { /* not JSON, keep original */ }
+    }
+    // Collapse escape sequences and excessive whitespace.
+    summary = summary.replace(/\\n/g, ' ').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+    if (summary.length > 160) summary = summary.slice(0, 160) + '…';
+
+    return `${escapeHtml(prefix)} ${escapeHtml(summary)}` +
+      ` <details><summary></summary><pre class="full-warn">${escapeHtml(s)}</pre></details>`;
+  }
+  function setStatus(text, addr) {
+    const t = $('statusText');
+    t.textContent = addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : text;
+    $('status').classList.toggle('idle', !addr);
+    $('status').title = addr || '';
+  }
+
+  // ---- Per-chain palette + inline SVG logos ----
+  const CHAIN_META = {
+    ethereum: {
+      label: 'Ethereum', color: '#627eea', tw: 'ethereum',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#627eea"/><path d="M16 4v8.87l7.5 3.35L16 4z" fill="#fff" fill-opacity=".6"/><path d="M16 4 8.5 16.22 16 12.87V4z" fill="#fff"/><path d="M16 21.97v6.02L23.5 17.6 16 21.97z" fill="#fff" fill-opacity=".6"/><path d="M16 27.99v-6.02L8.5 17.6 16 27.99z" fill="#fff"/><path d="m16 20.57 7.5-4.35L16 12.88v7.69z" fill="#fff" fill-opacity=".2"/><path d="m8.5 16.22 7.5 4.35v-7.69l-7.5 3.34z" fill="#fff" fill-opacity=".6"/></svg>`,
+    },
+    arbitrum: {
+      label: 'Arbitrum', color: '#28a0f0', tw: 'arbitrum',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#2d374b"/><path d="M14.4 9.4 8.5 19.6l1.5 1 5.6-9.7-1.2-1.5z" fill="#9dcced"/><path d="M16.2 9.4 9.7 21l1.7-.05L17.6 10.7 16.2 9.4z" fill="#28a0f0"/><circle cx="22.5" cy="22.5" r="2" fill="#28a0f0"/></svg>`,
+    },
+    optimism: {
+      label: 'Optimism', color: '#ff0420', tw: 'optimism',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#ff0420"/><path d="M11.6 19.4c-1 0-1.8-.2-2.4-.7-.6-.5-.9-1.2-.9-2.1 0-.2 0-.4.1-.7.2-1.2.5-2.1.9-2.8.7-1 1.7-1.5 3-1.5 1 0 1.8.2 2.4.7.6.5.9 1.2.9 2.1 0 .2 0 .4-.1.7-.3 1.5-.6 2.4-.9 2.8-.7 1-1.7 1.5-3 1.5zm.2-1.6c.5 0 .9-.2 1.3-.5.4-.3.6-.7.7-1.3.2-.7.2-1.4.2-1.7 0-.5-.1-.8-.3-1-.2-.2-.5-.3-1-.3-.5 0-.9.2-1.3.5-.4.3-.6.7-.7 1.3-.1.4-.2 1-.2 1.7 0 .5.1.8.3 1 .3.2.6.3 1 .3zm5.2 4.1c-.1 0-.1-.1-.1-.1l1.7-7.9v-.1h2.8c.8 0 1.4.2 1.8.5.4.3.7.8.7 1.4 0 .2 0 .4-.1.6-.2.8-.6 1.4-1.2 1.7-.6.4-1.4.6-2.4.6h-1.4l-.6 2.7-.1.1h-1.1zm2.5-4.1c.7 0 1.1-.1 1.4-.4.3-.3.5-.6.5-1 0-.2 0-.4-.1-.5-.1-.1-.2-.2-.4-.3-.2-.1-.4-.1-.7-.1h-1.3l-.6 2.4h1.2z" fill="#fff"/></svg>`,
+    },
+    base: {
+      label: 'Base', color: '#0052ff', tw: 'base',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#0052ff"/><path d="M15.9 24c4.4 0 8-3.6 8-8s-3.6-8-8-8C11.7 8 8.3 11.2 8 15.4h10.6v1.3H8c.4 4 3.7 7.3 7.9 7.3z" fill="#fff"/></svg>`,
+    },
+    polygon: {
+      label: 'Polygon', color: '#8247e5', tw: 'polygon',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#8247e5"/><path d="M21 13.7c-.4-.2-.8-.2-1.2 0l-2.7 1.6-1.9 1-2.6 1.6c-.4.2-.8.2-1.2 0l-2.1-1.2c-.4-.2-.6-.6-.6-1V14c0-.4.2-.8.6-1l2-1.2c.4-.2.8-.2 1.2 0l2 1.2c.4.2.6.6.6 1v1.6l1.9-1.1V13c0-.4-.2-.8-.6-1l-3.8-2.3c-.4-.2-.8-.2-1.2 0l-3.9 2.3c-.4.2-.6.6-.6 1v4.5c0 .4.2.8.6 1l3.9 2.3c.4.2.8.2 1.2 0l2.6-1.5 1.9-1.1 2.6-1.5c.4-.2.8-.2 1.2 0l2 1.2c.4.2.6.6.6 1v2.3c0 .4-.2.8-.6 1l-2 1.2c-.4.2-.8.2-1.2 0l-2-1.2c-.4-.2-.6-.6-.6-1v-1.6l-1.9 1.1v1.6c0 .4.2.8.6 1l3.9 2.3c.4.2.8.2 1.2 0l3.9-2.3c.4-.2.6-.6.6-1v-4.6c0-.4-.2-.8-.6-1L21 13.7z" fill="#fff"/></svg>`,
+    },
+    bnb: {
+      label: 'BNB', color: '#f3ba2f', tw: 'smartchain',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#f3ba2f"/><path d="M12 14.6 16 10.5l4 4.1 2.4-2.4L16 5.7l-6.4 6.5L12 14.6zm-6.4 1.4 2.4-2.4 2.4 2.4-2.4 2.4-2.4-2.4zm6.4 1.4L16 21.5l4-4.1 2.4 2.4-6.4 6.5L9.6 19.8l2.4-2.4zm9.6-1.4 2.4-2.4 2.4 2.4-2.4 2.4-2.4-2.4zM18.4 16 16 13.6 14.2 15.4l-.2.2.2.2L16 17.6 18.4 16z" fill="#fff"/></svg>`,
+    },
+    avalanche: {
+      label: 'Avalanche', color: '#e84142', tw: 'avalanchec',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#e84142"/><path d="M21.6 16.5c.5-.9 1.4-.9 2 0l3 4.9c.5.9.1 1.6-1 1.6h-6c-1 0-1.5-.7-1-1.6l3-4.9zm-5.7-9.9c.5-.9 1.4-.9 1.9 0l.6 1.2 1.6 2.7c.4.7.4 1.5 0 2.2l-5.3 9.3c-.5.8-1.4 1.3-2.3 1.3h-4.4c-1.1 0-1.5-.7-1-1.6l8.9-15.1z" fill="#fff"/></svg>`,
+    },
+    gnosis: {
+      label: 'Gnosis', color: '#04795b', tw: 'xdai',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#04795b"/><circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="3.2" fill="#fff"/></svg>`,
+    },
+    linea: {
+      label: 'Linea', color: '#121212', tw: 'linea',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#121212"/><path d="M9 9.5h3.6v9.6h7v3.4H9V9.5zm9.5 0H22v2.6h-3.5V9.5zm0 4.2H22v8.8h-3.5v-8.8z" fill="#61dfff"/></svg>`,
+    },
+    scroll: {
+      label: 'Scroll', color: '#ffeeda', tw: 'scroll',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#ffeeda"/><path d="M9 11c0-1.7 1.3-3 3-3h11v15c0 .6-.4 1-1 1H12c-1.7 0-3-1.3-3-3V11zm3-1c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h9V10h-9z" fill="#1a0a01"/><circle cx="20.5" cy="14" r="1.2" fill="#1a0a01"/></svg>`,
+    },
+    blast: {
+      label: 'Blast', color: '#fcfc03', tw: 'blast',
+      svg: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#fcfc03"/><path d="M16 6 6 12.5l3.6 1.7L16 10.5l6.4 3.7 3.6-1.7L16 6zM6 14.5v6.3L16 27l10-6.2v-6.3L16 20.5 6 14.5zm5.4 1.6L16 18.7l4.6-2.6v3.2L16 22 11.4 19.3v-3.2z" fill="#000"/></svg>`,
+    },
+  };
+
+  function chainBadge(key) {
+    const m = CHAIN_META[key] || { label: key, color: '#888', svg: '' };
+    return `<span class="chain-tag" style="border-color:${m.color}33;">
+              <span class="chain-icon">${m.svg}</span>${escapeHtml(m.label)}
+            </span>`;
+  }
+
+  // ---- Token icon: multi-CDN fallback chain, then letter-fallback ----
+  // We render <span data-...><img data-srcs="url1|url2"/></span> and let JS
+  // walk the source list on load errors. Inline onerror breaks on the inner
+  // attribute quotes, so we attach handlers in JS after the table renders.
+  function fallbackIconHtml(initial, c1, c2) {
+    return `<span class="token-icon fallback" style="--c1:${c1};--c2:${c2};">${escapeHtml(initial)}</span>`;
+  }
+  function tokenIconHtml(h) {
+    const sym = (h.symbol || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 4) || '?';
+    const initial = sym[0].toUpperCase();
+    const meta = CHAIN_META[h.chain_key] || {};
+    const chainColor = meta.color || '#444';
+    const hue = [...sym].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+    const c2 = `hsl(${hue}, 60%, 35%)`;
+
+    if (h.is_native && meta.svg) {
+      return `<span class="token-icon">${meta.svg}</span>`;
+    }
+    const tw = meta.tw || h.chain_key;
+    const addr = (h.token_address || '').toLowerCase();
+    if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+      return fallbackIconHtml(initial, chainColor, c2);
+    }
+    // Try 1inch first (case-insensitive, broad multi-chain coverage),
+    // then TrustWallet (case-sensitive, but covers different niche tokens).
+    const srcs = [
+      `https://tokens.1inch.io/${addr}.png`,
+      `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${tw}/assets/${addr}/logo.png`,
+    ].join('|');
+    return `<span class="token-icon" data-sym="${escapeHtml(initial)}" data-c1="${chainColor}" data-c2="${c2}">
+              <img data-srcs="${srcs}" loading="lazy" alt="${escapeHtml(h.symbol)}" />
+            </span>`;
+  }
+  function attachIconFallbacks(root) {
+    root.querySelectorAll('img[data-srcs]').forEach((img) => {
+      const srcs = img.dataset.srcs.split('|').filter(Boolean);
+      let i = 0;
+      function tryNext() {
+        if (i >= srcs.length) {
+          const span = img.closest('.token-icon');
+          if (!span) return;
+          span.outerHTML =
+            `<span class="token-icon fallback" style="--c1:${span.dataset.c1};--c2:${span.dataset.c2};">${span.dataset.sym}</span>`;
+          return;
+        }
+        img.src = srcs[i++];
+      }
+      img.addEventListener('error', tryNext);
+      tryNext();
+    });
+  }
+
+  // ---- MetaMask connection persistence (30-min rolling TTL) ----
+  const STORAGE_KEY = 'cryptoapp.connection';
+  const CONNECTION_TTL_MS = 30 * 60 * 1000;
+  let mmListenersAttached = false;
+
+  function saveConnection(addr) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        addr,
+        connectedAt: Date.now(),
+      }));
+    } catch (_) { /* private mode / quota — ignore */ }
+  }
+  function loadConnection() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.addr) return null;
+      if (Date.now() - (data.connectedAt || 0) > CONNECTION_TTL_MS) {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+  function clearConnection() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  }
+
+  function attachMetaMaskListeners() {
+    if (mmListenersAttached || !window.ethereum) return;
+    mmListenersAttached = true;
+    window.ethereum.on('accountsChanged', (accs2) => {
+      const a = accs2 && accs2[0];
+      if (a) {
+        $('addrInput').value = a;
+        setStatus(null, a);
+        saveConnection(a);
+        doScan();
+      } else {
+        clearConnection();
+        setStatus('не подключён');
+      }
+    });
+    // Some wallets emit chainChanged — don't care here, scanner is multi-chain.
+  }
+
+  // Active connect — opens the MetaMask popup if needed.
+  async function connectMetaMask() {
+    if (!window.ethereum) {
+      alert('MetaMask не найден. Установи расширение или вставь адрес вручную.');
+      return null;
+    }
+    try {
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accs || !accs.length) return null;
+      const addr = accs[0];
+      $('addrInput').value = addr;
+      setStatus(null, addr);
+      saveConnection(addr);
+      attachMetaMaskListeners();
+      return addr;
+    } catch (e) {
+      console.error(e);
+      alert('Не удалось подключить MetaMask: ' + (e?.message || e));
+      return null;
+    }
+  }
+
+  // Silent restore on page load — never opens a popup. If MetaMask is locked
+  // we keep the address in the input (so manual scan still works) but mark
+  // status as "не подключён" so the user knows to re-connect for live updates.
+  async function tryRestoreConnection() {
+    const saved = loadConnection();
+    if (!saved) return;
+
+    // Pre-fill the input either way, so the saved wallet is usable as read-only.
+    $('addrInput').value = saved.addr;
+
+    let mmHasIt = false;
+    if (window.ethereum) {
+      try {
+        const accs = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accs && accs.length) {
+          // Compare case-insensitively; MetaMask returns checksum-cased.
+          mmHasIt = accs[0].toLowerCase() === saved.addr.toLowerCase();
+        }
+      } catch (_) { /* swallow — silent restore must never alert */ }
+    }
+    if (mmHasIt) {
+      setStatus(null, saved.addr);
+      saveConnection(saved.addr);          // refresh TTL
+      attachMetaMaskListeners();
+    } else {
+      // Address known, but MetaMask isn't actively holding it (locked or revoked).
+      setStatus('адрес сохранён');
+    }
+    doScan();
+  }
+
+  // ---- Scan & render ----
+  async function fetchScan(wallet, includeZero) {
+    const url = new URL('/api/scan', API_BASE);
+    url.searchParams.set('wallet', wallet);
+    if (includeZero) url.searchParams.set('include_zero', '1');
+    const resp = await fetch(url.toString());
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${text}`);
+    }
+    return await resp.json();
+  }
+  function renderTotals(data) {
+    $('totals').style.display = 'grid';
+    $('totalUsd').textContent = fmtMoney(data.total_usd, 'USD');
+    $('totalRub').textContent = fmtMoney(data.total_rub, 'RUB');
+    $('usdRub').textContent = data.usd_rub_rate
+      ? `1 $ = ${fmtNumber(data.usd_rub_rate, 2)} ₽`
+      : '—';
+  }
+  // ---- Idle money calculator (best-yield match per holding) -----------
+  let idleYieldCache = null;
+  let idleYieldFetchedAt = 0;
+  async function ensureIdleYieldCache() {
+    if (idleYieldCache && Date.now() - idleYieldFetchedAt < 10 * 60 * 1000) return idleYieldCache;
+    try {
+      // Fetch a generous slice of low-risk pools for matching.
+      const u = new URL('/api/yield/scan', API_BASE);
+      u.searchParams.set('min_tvl',  '5000000');
+      u.searchParams.set('min_apy',  '1');
+      u.searchParams.set('no_il',    '1');
+      u.searchParams.set('limit',    '500');
+      const r = await fetch(u);
+      if (!r.ok) return null;
+      const d = await r.json();
+      idleYieldCache = d.pools || [];
+      idleYieldFetchedAt = Date.now();
+      return idleYieldCache;
+    } catch (_) { return null; }
+  }
+
+  // For one holding, find best APY pool that matches (chain, symbol).
+  function bestPoolFor(h, pools) {
+    if (!pools) return null;
+    const sym = (h.symbol || '').toUpperCase();
+    const cands = pools.filter(p => {
+      if (p.chain_key !== h.chain_key) return false;
+      const parts = (p.symbol || '').split(/[-+\/ ]/).map(s => s.toUpperCase());
+      return parts.includes(sym);
+    });
+    if (!cands.length) return null;
+    cands.sort((a, b) => b.apy - a.apy);
+    return cands[0];
+  }
+
+  function renderIdleBanner(data) {
+    const slot = $('idleBanner');
+    if (!slot) return;
+    if (!data.holdings || !idleYieldCache) { slot.innerHTML = ''; return; }
+    const rubRate = Number(data.usd_rub_rate || 0);
+
+    // Filter holdings: exclude tiny dust + native tokens that the user can't
+    // really redeploy (gas reserve). Native tokens > $10 still count — Lido
+    // / Aave (via WETH gateway) etc. could be a fit.
+    const candidates = data.holdings.filter(h => Number(h.value_usd) > 10);
+    if (!candidates.length) { slot.innerHTML = ''; return; }
+
+    let totalIdleUsd = 0, missedMonthlyUsd = 0;
+    const opps = [];
+    for (const h of candidates) {
+      const pool = bestPoolFor(h, idleYieldCache);
+      if (!pool || pool.apy <= 0) continue;
+      const monthly = Number(h.value_usd) * (pool.apy / 100) / 12;
+      if (monthly < 0.05) continue;   // skip negligible (sub-5¢/mo)
+      totalIdleUsd += Number(h.value_usd);
+      missedMonthlyUsd += monthly;
+      opps.push({ h, pool, monthly });
+    }
+    if (!opps.length) { slot.innerHTML = ''; return; }
+
+    const yearly = missedMonthlyUsd * 12;
+    const monthlyRub = missedMonthlyUsd * rubRate;
+    slot.innerHTML = `
+      <div class="idle-banner">
+        <span class="emoji">💸</span>
+        <div class="text">
+          У тебя <strong>${fmtMoney(totalIdleUsd, 'USD')}</strong> валяются без работы — могли бы зарабатывать
+          <strong>+${fmtMoney(missedMonthlyUsd, 'USD')}/мес</strong>
+          ${rubRate ? ` (${fmtMoney(monthlyRub, 'RUB')})` : ''}
+          ·  ${fmtMoney(yearly, 'USD')}/год
+        </div>
+        <button type="button" id="idleShowOpps">Показать варианты</button>
+      </div>`;
+    $('idleShowOpps').addEventListener('click', () => {
+      // Switch to Yield tab; user already sees pre-filtered "только мои токены".
+      setActiveTab('yield');
+      const tab = document.querySelector('.tab[data-tab="yield"]');
+      if (tab && !$('yieldResult').dataset.loaded) tab.click();
+    });
+  }
+
+  function renderHoldings(data) {
+    const root = $('result');
+    $('cntHoldings').textContent = (data.holdings || []).length;
+    // Lazy-load yield cache, then render the idle banner non-blocking.
+    ensureIdleYieldCache().then(() => renderIdleBanner(data));
+    if (!data.holdings || !data.holdings.length) {
+      root.innerHTML = '<div class="empty">Балансы не найдены. Попробуй включить «показать нулевые» или проверь адрес.</div>';
+      return;
+    }
+    const total = Math.max(0.000001, data.total_usd || 0);
+    let html = '';
+    if (data.warnings && data.warnings.length) {
+      html += '<ul class="warn-list">';
+      for (const w of data.warnings) html += `<li>${formatWarning(w)}</li>`;
+      html += '</ul>';
+    }
+    html += `
+      <table>
+        <thead><tr>
+          <th style="padding-left:14px;">Сеть</th>
+          <th>Актив</th>
+          <th class="num">Количество</th>
+          <th class="num">Цена</th>
+          <th class="num">Стоимость, $</th>
+          <th class="num">Стоимость, ₽</th>
+        </tr></thead>
+        <tbody>`;
+    for (const h of data.holdings) {
+      const pct = h.value_usd ? (h.value_usd / total) * 100 : 0;
+      const allocBar = h.value_usd
+        ? `<div class="alloc-bar-wrap">
+             ${fmtMoney(h.value_usd, 'USD')}
+             <div class="alloc-bar"><span style="width:${Math.max(2, Math.min(100, pct)).toFixed(2)}%;"></span></div>
+           </div>`
+        : '<span class="muted">—</span>';
+      html += `
+        <tr class="holding-row">
+          <td>${chainBadge(h.chain_key)}</td>
+          <td>
+            <div class="token">
+              ${tokenIconHtml(h)}
+              <div>
+                <div class="token-name">${escapeHtml(h.symbol)}${h.is_native ? ' <span class="muted" style="font-weight:400;font-size:11px;">native</span>' : ''}</div>
+                <div class="token-sub">${escapeHtml((CHAIN_META[h.chain_key] || {}).label || h.chain_key)}</div>
+              </div>
+            </div>
+          </td>
+          <td class="num mono">${fmtNumber(h.amount, 8)}</td>
+          <td class="num">${h.price_usd ? fmtMoney(h.price_usd, 'USD') : '<span class="muted">—</span>'}</td>
+          <td class="num">${allocBar}</td>
+          <td class="num">${h.value_rub ? fmtMoney(h.value_rub, 'RUB') : '<span class="muted">—</span>'}</td>
+        </tr>`;
+    }
+    html += '</tbody></table>';
+    root.innerHTML = html;
+    attachIconFallbacks(root);
+  }
+  function renderDefi(data) {
+    const body = $('defiBody');
+    const sub  = $('defiSubtitle');
+    const positions = data.defi_positions || [];
+    $('cntDefi').textContent = positions.length;
+
+    if (!positions.length) {
+      sub.textContent = '';
+      body.innerHTML = '<div class="empty">На этом адресе позиций в Aave V3 / Uniswap V3 не найдено.</div>';
+      return;
+    }
+
+    // Summary line: net Aave value, total LP value.
+    let netAave = 0, lpUsd = 0;
+    for (const p of positions) {
+      if (p.protocol === 'Aave V3' && p.kind === 'supply') netAave += (p.value_usd || 0);
+      if (p.protocol === 'Aave V3' && p.kind === 'borrow') netAave -= (p.value_usd || 0);
+      if (p.kind === 'lp') lpUsd += (p.value_usd || 0);
+    }
+    const parts = [`${positions.length} позиций`];
+    if (netAave) parts.push(`Aave net ${fmtMoney(netAave, 'USD')}`);
+    if (lpUsd)   parts.push(`LP ${fmtMoney(lpUsd, 'USD')}`);
+    sub.textContent = parts.join(' · ');
+
+    // Per-row Withdraw button caches. Reset on every render.
+    window.__aaveSupplies = [];
+    window.__compoundSupplies = [];
+
+    let html = '';
+    for (const p of positions) {
+      const kindCls = `kind-tag kind-${escapeHtml(p.kind || 'summary')}`;
+      const kindLbl = ({ supply: 'supply', borrow: 'borrow', lp: 'LP', summary: 'info' })[p.kind] || p.kind || '—';
+
+      let valueHtml = '<span class="muted">—</span>';
+      if (p.kind === 'supply' && p.value_usd) {
+        valueHtml = fmtMoney(p.value_usd, 'USD')
+          + (p.value_rub ? `<span class="sub">${fmtMoney(p.value_rub, 'RUB')}</span>` : '');
+      } else if (p.kind === 'borrow' && p.value_usd) {
+        valueHtml = '−' + fmtMoney(p.value_usd, 'USD')
+          + (p.value_rub ? `<span class="sub">−${fmtMoney(p.value_rub, 'RUB')}</span>` : '');
+      } else if (p.kind === 'lp') {
+        if (p.value_usd) {
+          valueHtml = fmtMoney(p.value_usd, 'USD')
+            + (p.value_rub ? `<span class="sub">${fmtMoney(p.value_rub, 'RUB')}</span>` : '');
+        } else {
+          valueHtml = `<span class="muted">${p.in_range ? 'в диапазоне' : 'вне диапазона'}</span>`;
+        }
+      } else if (p.kind === 'summary' && p.health_factor) {
+        const hf = p.health_factor.toFixed(2);
+        const cls = p.health_factor >= 2 ? 'kind-supply' : (p.health_factor >= 1.2 ? 'kind-summary' : 'kind-borrow');
+        valueHtml = `<span class="kind-tag ${cls}">HF ${hf}</span>`;
+      }
+
+      // For LP positions, append concrete amounts under the label.
+      let labelExtra = '';
+      if (p.kind === 'lp' && (p.amount0 || p.amount1)) {
+        const parts = [];
+        if (p.amount0) parts.push(`${fmtNumber(p.amount0, 6)} ${escapeHtml(p.token0_symbol)}`);
+        if (p.amount1) parts.push(`${fmtNumber(p.amount1, 6)} ${escapeHtml(p.token1_symbol)}`);
+        if (parts.length) labelExtra = `<div class="muted" style="font-size:11px;margin-top:2px;">${parts.join(' + ')}</div>`;
+      }
+
+      const linkHtml = p.link
+        ? `<a class="tiny-link" href="${escapeHtml(p.link)}" target="_blank" rel="noopener">↗</a>`
+        : '';
+
+      // Withdraw button for supply rows with a recognized token. Routes to
+      // the matching protocol-specific handler.
+      let actionHtml = '';
+      const hasToken = p.token0_symbol && p.token0_address &&
+                       p.token0_address !== '0x0000000000000000000000000000000000000000';
+      if (p.kind === 'supply' && hasToken) {
+        if (p.protocol === 'Aave V3' || p.protocol === 'Spark') {
+          const i = window.__aaveSupplies.length;
+          window.__aaveSupplies.push(p);
+          actionHtml = ` <button class="swap-btn" onclick="executeAaveWithdraw(${i})" style="margin-top:6px;">Withdraw</button>`;
+        } else if (p.protocol === 'Compound V3') {
+          const i = window.__compoundSupplies.length;
+          window.__compoundSupplies.push(p);
+          actionHtml = ` <button class="swap-btn" onclick="executeCompoundWithdraw(${i})" style="margin-top:6px;">Withdraw</button>`;
+        }
+      }
+
+      html += `
+        <div class="defi-row">
+          <span>${chainBadge(p.chain_key)}</span>
+          <span><span class="protocol-tag">${escapeHtml(p.protocol)}</span> <span class="${kindCls}">${escapeHtml(kindLbl)}</span></span>
+          <span class="label">${escapeHtml(p.label)} ${linkHtml}${labelExtra}${actionHtml}</span>
+          <span class="value">${valueHtml}</span>
+        </div>`;
+    }
+    body.innerHTML = html;
+  }
+
+  // ---- Tabs ----
+  function setActiveTab(name) {
+    document.querySelectorAll('.tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === name);
+    });
+    document.querySelectorAll('.tab-pane').forEach(p => {
+      p.hidden = p.dataset.pane !== name;
+    });
+  }
+  document.querySelectorAll('.tab').forEach(b => {
+    b.addEventListener('click', () => setActiveTab(b.dataset.tab));
+  });
+
+  function renderSkeleton() {
+    let rows = '';
+    for (let i = 0; i < 6; i++) {
+      rows += `<tr class="skeleton-row">
+        <td><span class="sk" style="width:90px"></span></td>
+        <td><span class="sk" style="width:140px"></span></td>
+        <td class="num"><span class="sk" style="width:60px"></span></td>
+        <td class="num"><span class="sk" style="width:50px"></span></td>
+        <td class="num"><span class="sk" style="width:70px"></span></td>
+        <td class="num"><span class="sk" style="width:70px"></span></td>
+      </tr>`;
+    }
+    $('result').innerHTML = `<table><tbody>${rows}</tbody></table>`;
+  }
+
+  // ---- Auto-refresh (always-on, 10s, pauses when tab hidden) ----
+  let scanInFlight = false;
+  let lastSuccessAt = 0;
+  let lastScanData = null;       // most recent successful scan; used by bridges tab
+  const REFRESH_INTERVAL_MS = 10000;
+
+  function updateLastUpdatedLabel() {
+    const el = $('lastUpdated');
+    if (!lastSuccessAt) { el.style.display = 'none'; return; }
+    const sec = Math.floor((Date.now() - lastSuccessAt) / 1000);
+    el.style.display = '';
+    if (sec < 5)         el.textContent = 'обновлено только что';
+    else if (sec < 60)   el.textContent = `обновлено ${sec} сек назад`;
+    else                 el.textContent = `обновлено ${Math.floor(sec / 60)} мин назад`;
+  }
+  setInterval(updateLastUpdatedLabel, 1000);
+
+  // Single global ticker. Skips when:
+  //   * no valid address in the input,
+  //   * the tab is hidden (saves RPC quota — most public RPCs throttle hard),
+  //   * a scan is already in flight.
+  setInterval(() => {
+    if (document.visibilityState === 'hidden') return;
+    if (scanInFlight) return;
+    const v = $('addrInput').value.trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(v)) return;
+    doScan();
+  }, REFRESH_INTERVAL_MS);
+
+  // When the user returns to the tab after being away, refresh immediately
+  // instead of waiting up to 10s for the next tick.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const v = $('addrInput').value.trim();
+    if (/^0x[0-9a-fA-F]{40}$/.test(v) && !scanInFlight) doScan();
+  });
+
+  async function runScan() {
+    const addr = $('addrInput').value.trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      alert('Введи валидный 0x-адрес из 40 hex-символов.');
+      return false;
+    }
+    const includeZero = $('includeZero').checked;
+    if (!lastSuccessAt) { renderSkeleton(); $('totals').style.display = 'none'; }
+    try {
+      const data = await fetchScan(addr, includeZero);
+      lastScanData = data;
+      renderTotals(data);
+      renderHoldings(data);
+      renderDefi(data);
+      // Health Factor monitoring runs on every successful scan — picks up
+      // dropping HF without the user having to be on the DeFi tab.
+      try { checkHealthFactors(data); } catch (_) {}
+      // Re-render the optimizer if it's already loaded (data may have changed).
+      if (idleYieldCache) renderYieldOptimizer();
+      // If the bridges form is already populated, refresh the balance hint.
+      if (typeof updateBridgeBalance === 'function') updateBridgeBalance();
+      return true;
+    } catch (e) {
+      $('result').innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || String(e))}</div>`;
+      return false;
+    }
+  }
+  async function doScan() {
+    if (scanInFlight) return;
+    scanInFlight = true;
+    try {
+      const ok = await runScan();
+      if (ok) {
+        lastSuccessAt = Date.now();
+        updateLastUpdatedLabel();
+        // Rolling 30-min TTL: any successful scan with a saved connection
+        // pushes its expiry forward.
+        if (loadConnection()) saveConnection($('addrInput').value.trim());
+      }
+    } finally {
+      scanInFlight = false;
+    }
+  }
+
+  // ---- Wire up ----
+  $('connectBtn').addEventListener('click', async () => {
+    const a = await connectMetaMask();
+    if (a) doScan();
+  });
+  $('scanBtn').addEventListener('click', doScan);
+  $('addrInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doScan(); });
+  $('includeZero').addEventListener('change', () => {
+    if ($('addrInput').value) doScan();
+  });
+
+  // ---- Bridges ----
+  let registryData = null;
+
+  async function loadRegistry() {
+    if (registryData) return registryData;
+    try {
+      const resp = await fetch(API_BASE + '/api/registry');
+      if (!resp.ok) return null;
+      registryData = await resp.json();
+      return registryData;
+    } catch (e) {
+      console.error('registry load failed', e);
+      return null;
+    }
+  }
+
+  function populateBridgeChain(selectId, defaultKey) {
+    const sel = $(selectId);
+    if (!registryData) return;
+    sel.innerHTML = registryData.chains.map(c =>
+      `<option value="${c.key}" data-chain-id="${c.chain_id}">${escapeHtml(c.name)}</option>`).join('');
+    if (defaultKey) sel.value = defaultKey;
+  }
+  function populateBridgeTokens(chainSelectId, tokenSelectId, defaultSymbol) {
+    const chainKey = $(chainSelectId).value;
+    const chain = registryData?.chains.find(c => c.key === chainKey);
+    if (!chain) return;
+    $(tokenSelectId).innerHTML = chain.tokens.map(t =>
+      `<option value="${t.address}" data-decimals="${t.decimals}" data-symbol="${escapeHtml(t.symbol)}" data-native="${t.is_native}">
+        ${escapeHtml(t.symbol)}${t.is_native ? ' · native' : ''}
+      </option>`).join('');
+    if (defaultSymbol) {
+      const opt = Array.from($(tokenSelectId).options).find(o => o.dataset.symbol === defaultSymbol);
+      if (opt) $(tokenSelectId).value = opt.value;
+    }
+  }
+
+  // Look up the user's holding for a given (chain, token).
+  function findHoldingForBridge(chainKey, tokenAddrLower, isNative) {
+    if (!lastScanData?.holdings) return null;
+    return lastScanData.holdings.find(h => {
+      if (h.chain_key !== chainKey) return false;
+      if (isNative) return h.is_native === true;
+      if (h.is_native) return false;
+      return (h.token_address || '').toLowerCase() === tokenAddrLower;
+    }) || null;
+  }
+
+  // Render the "Доступно: X" hint under the amount input. Idempotent — safe
+  // to call after every form change or after a fresh scan.
+  function updateBridgeBalance() {
+    const sel = $('bridgeFromToken');
+    const el  = $('bridgeBalance');
+    if (!sel || !el) return;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) { el.innerHTML = ''; return; }
+
+    const chainKey = $('bridgeFromChain').value;
+    const isNative = opt.dataset.native === 'true';
+    const tokenAddr = (opt.value || '').toLowerCase();
+    const symbol = opt.dataset.symbol || '';
+
+    const h = findHoldingForBridge(chainKey, tokenAddr, isNative);
+
+    if (h && Number(h.amount) > 0) {
+      el.classList.add('has-balance');
+      el.innerHTML =
+        `Доступно: <span class="mono">${fmtNumber(h.amount, 8)} ${escapeHtml(symbol)}</span>` +
+        ` <button type="button" class="max-btn" id="bridgeMaxBtn">MAX</button>` +
+        (h.value_usd
+          ? ` <span class="muted">· ≈ ${fmtMoney(h.value_usd, 'USD')}</span>`
+          : '');
+      $('bridgeMaxBtn').addEventListener('click', () => {
+        $('bridgeAmount').value = h.amount;
+      });
+    } else if (lastScanData) {
+      el.classList.remove('has-balance');
+      el.innerHTML = `<span class="muted">Нет ${escapeHtml(symbol)} на этом адресе в выбранной сети</span>`;
+    } else {
+      el.classList.remove('has-balance');
+      el.innerHTML = `<span class="muted">Подключи кошелёк или вставь адрес — увидишь свой баланс</span>`;
+    }
+  }
+
+  // Convert a human-readable amount string (e.g. "12.345") to raw integer
+  // string in smallest units (e.g. "12345000" for decimals=6). No floats.
+  function scaleAmount(human, decimals) {
+    const s = String(human).trim();
+    if (!/^\d+(\.\d+)?$/.test(s)) return null;
+    let [intPart, fracPart = ''] = s.split('.');
+    fracPart = (fracPart + '0'.repeat(decimals)).slice(0, decimals);
+    const result = (intPart + fracPart).replace(/^0+/, '') || '0';
+    return result;
+  }
+
+  function secsToHuman(s) {
+    if (!s || s < 60) return `${s || 0} сек`;
+    if (s < 3600)    return `~${Math.round(s / 60)} мин`;
+    return `~${(s / 3600).toFixed(1)} ч`;
+  }
+
+  async function bridgeQuote() {
+    if (!registryData) await loadRegistry();
+    if (!registryData) {
+      $('bridgeResult').innerHTML = '<div class="error">Не удалось загрузить список сетей. Бэкенд запущен?</div>';
+      return;
+    }
+    const fromChainKey = $('bridgeFromChain').value;
+    const toChainKey   = $('bridgeToChain').value;
+    const fromChain = registryData.chains.find(c => c.key === fromChainKey);
+    const toChain   = registryData.chains.find(c => c.key === toChainKey);
+    if (!fromChain || !toChain) return;
+    const fromTokenSel = $('bridgeFromToken');
+    const toTokenSel   = $('bridgeToToken');
+    const fromTokenAddr = fromTokenSel.value;
+    const toTokenAddr   = toTokenSel.value;
+    // Same-chain + same-token = nothing to do.
+    if (fromChain.chain_id === toChain.chain_id &&
+        fromTokenAddr.toLowerCase() === toTokenAddr.toLowerCase()) {
+      $('bridgeResult').innerHTML = '<div class="error">Выбери разные токены — обмен на тот же токен в той же сети не имеет смысла.</div>';
+      return;
+    }
+    const fromDecimals = parseInt(fromTokenSel.options[fromTokenSel.selectedIndex]?.dataset.decimals || '18', 10);
+
+    const amountHuman = $('bridgeAmount').value.trim();
+    const rawAmount = scaleAmount(amountHuman, fromDecimals);
+    if (!rawAmount || rawAmount === '0') {
+      $('bridgeResult').innerHTML = '<div class="error">Введи положительную сумму.</div>';
+      return;
+    }
+
+    const wallet = $('addrInput').value.trim() || '0x0000000000000000000000000000000000000000';
+
+    const url = new URL('/api/bridge/quote', API_BASE);
+    url.searchParams.set('from_chain', fromChain.chain_id);
+    url.searchParams.set('to_chain',   toChain.chain_id);
+    url.searchParams.set('from_token', fromTokenAddr);
+    url.searchParams.set('to_token',   toTokenAddr);
+    url.searchParams.set('amount',     rawAmount);
+    url.searchParams.set('from_address', wallet);
+
+    $('bridgeResult').innerHTML = '<div class="loading">Опрашиваем LiFi…</div>';
+    const btn = $('bridgeQuoteBtn');
+    btn.disabled = true;
+    try {
+      const resp = await fetch(url.toString());
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+      if (data.error) throw new Error(data.error);
+      renderBridgeResults(data);
+    } catch (e) {
+      $('bridgeResult').innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || e)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderBridgeResults(data) {
+    const root = $('bridgeResult');
+    bridgeRoutesByIdx = data.routes || [];
+    // Stash the raw integer amount on each route so executeSwap doesn't have
+    // to recompute it from the input (the user could have changed the input
+    // value between Quote and Swap).
+    const fromOpt = $('bridgeFromToken').options[$('bridgeFromToken').selectedIndex];
+    const fromDecimals = parseInt(fromOpt?.dataset.decimals || '18', 10);
+    const rawAmount = scaleAmount($('bridgeAmount').value.trim(), fromDecimals);
+    for (const r of bridgeRoutesByIdx) r.from_amount_raw_dec = rawAmount;
+
+    if (!data.routes || !data.routes.length) {
+      const fromKey = $('bridgeFromChain').value;
+      const toKey   = $('bridgeToChain').value;
+      const sameChain = fromKey === toKey;
+      const msg = sameChain
+        ? 'DEX-агрегатор не нашёл ликвидности для этой пары в выбранной сети.'
+        : 'Между выбранными сетями нет маршрута для этой пары токенов.';
+      root.innerHTML = `<div class="empty">${msg}</div>`;
+      return;
+    }
+    const rubRate = Number(data.usd_rub_rate || 0);
+
+    let html = '';
+    for (let idx = 0; idx < data.routes.length; idx++) {
+      const r = data.routes[idx];
+      const tagsHtml = (r.tags || []).map(t => `<span class="bridge-tag t-${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('');
+      const protocols = (r.steps || []).map(s => escapeHtml(s.protocol || '?')).join(' → ');
+
+      // Receive side — what user gets in the destination chain.
+      const toAmt   = Number(r.to_amount_human || 0);
+      const toUsd   = Number(r.to_amount_usd || 0);
+      const toRub   = toUsd * rubRate;
+      const fromUsd = Number(r.from_amount_usd || 0);
+
+      // Net loss (slippage + bridge fees + gas already deducted from to-side).
+      // Note: LiFi's `to_amount_usd` is what arrives, AFTER bridge fees but
+      // typically does NOT include source-chain gas. We add gas_usd to the
+      // "loss" so the user sees the all-in difference.
+      const lossUsd = Math.max(0, (fromUsd - toUsd) + (r.total_gas_usd || 0));
+      const lossPct = fromUsd > 0 ? (lossUsd / fromUsd) * 100 : 0;
+      const lossClass = lossPct > 1.0 ? 'loss big' : 'loss';
+
+      // Gas breakdown: one line per token.
+      const gasLines = (r.gas_breakdown || []).map(g => {
+        return `<div class="gas-amt">${fmtNumber(g.amount_human, 6)} ${escapeHtml(g.token_symbol)}</div>`;
+      }).join('');
+      const totalGasUsd = r.total_gas_usd ? fmtMoney(r.total_gas_usd, 'USD') : '—';
+      const totalGasRub = r.total_gas_rub ? fmtMoney(r.total_gas_rub, 'RUB') : '—';
+
+      html += `
+        <div class="bridge-route">
+          <div>
+            <div class="bridge-route-head">
+              <span class="protocol-tag">${escapeHtml(protocols || 'свап')}</span>
+              ${tagsHtml}
+            </div>
+            <div class="bridge-route-amounts">
+              <span class="from-side">${fmtNumber(r.from_amount_human, 6)} ${escapeHtml(r.from_token_symbol)} · ${fmtMoney(fromUsd, 'USD')}</span>
+              <span class="arrow">→</span>
+              <span class="to-side">
+                ${fmtNumber(toAmt, 6)} ${escapeHtml(r.to_token_symbol)}
+                <span class="to-fiat">· ${fmtMoney(toUsd, 'USD')}${rubRate ? ' · ' + fmtMoney(toRub, 'RUB') : ''}</span>
+              </span>
+            </div>
+            <div class="bridge-route-meta">
+              <span>${secsToHuman(r.execution_duration_seconds)}</span>
+              ${lossUsd > 0
+                ? `<span class="${lossClass}">потеря ${fmtMoney(lossUsd, 'USD')} (${lossPct.toFixed(2)}%)</span>`
+                : `<span class="loss">без потерь</span>`}
+              ${r.steps?.length > 1 ? `<span>${r.steps.length} шагов</span>` : ''}
+            </div>
+          </div>
+          <div class="bridge-route-cost">
+            <div class="gas-label">газ источника</div>
+            ${gasLines || '<span class="muted">—</span>'}
+            <div class="sub">${totalGasUsd} · ${totalGasRub}</div>
+            <button class="swap-btn"
+                    ${(r.steps?.length || 1) > 1 ? 'disabled title="Многошаговый маршрут — пока in-app не поддерживается"' : ''}
+                    onclick="executeSwap(${idx})">Обменять</button>
+          </div>
+        </div>`;
+    }
+    root.innerHTML = html;
+  }
+
+  // ============== Swap execution =====================================
+  // Holds the routes from the most recent /api/bridge/quote call so the
+  // "Свопнуть" buttons in the rendered cards can find their data.
+  let bridgeRoutesByIdx = [];
+
+  // Sentinel used by LiFi for "send native gas token instead of an ERC-20".
+  const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+  function isNativeAddr(a) {
+    return (a || '').toLowerCase() === NATIVE_TOKEN_SENTINEL;
+  }
+  function toHexQty(decStr) {
+    // BigInt-based decimal → 0x hex (without leading zeros).
+    return '0x' + BigInt(decStr).toString(16);
+  }
+  function chainIdHex(numeric) {
+    return '0x' + Number(numeric).toString(16);
+  }
+
+  // Encode ERC-20 approve(spender, amount) into calldata (no keccak needed).
+  function encodeApprove(spender, amountDec) {
+    const sel = '095ea7b3';                                 // approve(address,uint256)
+    const sp  = spender.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const am  = BigInt(amountDec).toString(16).padStart(64, '0');
+    return '0x' + sel + sp + am;
+  }
+  // Encode ERC-20 allowance(owner, spender) for read-only lookup.
+  function encodeAllowance(owner, spender) {
+    const sel = 'dd62ed3e';
+    const ow  = owner.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const sp  = spender.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    return '0x' + sel + ow + sp;
+  }
+
+  // ---- Modal helpers -------------------------------------------------
+  function showSwapModal(steps) {
+    closeSwapModal();
+    const back = document.createElement('div');
+    back.className = 'modal-backdrop';
+    back.id = 'swapModal';
+    back.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>Исполнение свопа</h3>
+        <div id="swapSteps">
+          ${steps.map((s, i) => `
+            <div class="step" data-i="${i}">
+              <div class="dot">${i + 1}</div>
+              <div class="body">
+                <div class="title">${escapeHtml(s)}</div>
+                <div class="detail"></div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="modal-actions">
+          <button id="swapClose" type="button">Закрыть</button>
+        </div>
+      </div>`;
+    document.body.appendChild(back);
+    $('swapClose').addEventListener('click', closeSwapModal);
+  }
+  function setSwapStep(i, state, detail) {
+    const el = document.querySelector(`#swapSteps .step[data-i="${i}"]`);
+    if (!el) return;
+    el.classList.remove('active', 'done', 'error');
+    if (state) el.classList.add(state);
+    if (detail !== undefined) el.querySelector('.detail').innerHTML = detail;
+    if (state === 'done') el.querySelector('.dot').textContent = '✓';
+    if (state === 'error') el.querySelector('.dot').textContent = '!';
+  }
+  function closeSwapModal() {
+    const m = $('swapModal');
+    if (m) m.remove();
+  }
+
+  // ---- Main flow -----------------------------------------------------
+  async function executeSwap(routeIdx) {
+    const route = bridgeRoutesByIdx[routeIdx];
+    if (!route) { alert('Маршрут не найден; перезапусти поиск'); return; }
+    if (!window.ethereum) { alert('MetaMask не установлен.'); return; }
+
+    // Steps to display in the modal.
+    const fromOpt = $('bridgeFromToken').options[$('bridgeFromToken').selectedIndex];
+    const fromTokenAddr = fromOpt?.value || '';
+    const fromIsNative  = isNativeAddr(fromTokenAddr) || fromOpt?.dataset.native === 'true';
+    const fromChainKey  = $('bridgeFromChain').value;
+    const fromChain     = registryData?.chains.find(c => c.key === fromChainKey);
+    if (!fromChain) { alert('Неизвестная исходная сеть'); return; }
+
+    const toChainKey = $('bridgeToChain').value;
+    const toChain    = registryData?.chains.find(c => c.key === toChainKey);
+    const isCrossChain = toChain && toChain.chain_id !== fromChain.chain_id;
+
+    const stepsLabels = [];
+    stepsLabels.push(`Переключиться на сеть «${fromChain.name}»`);
+    if (!fromIsNative) stepsLabels.push('Approve токена для контракта');
+    stepsLabels.push(isCrossChain ? 'Подписать транзакцию моста' : 'Подписать транзакцию свапа');
+    stepsLabels.push('Дождаться подтверждения в сети');
+    if (isCrossChain) stepsLabels.push('Дождаться доставки в целевую сеть');
+    showSwapModal(stepsLabels);
+
+    let stepIdx = 0;
+    const next = (state, detail) => { setSwapStep(stepIdx, state, detail); };
+
+    try {
+      // ---- 1. Switch chain -----------------------------------------
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accs || !accs.length) throw new Error('Аккаунт не подключён');
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== fromChain.chain_id) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: chainIdHex(fromChain.chain_id) }],
+          });
+        } catch (e) {
+          throw new Error('Не удалось переключиться на ' + fromChain.name + ': ' + (e?.message || e));
+        }
+      }
+      next('done', `аккаунт <span class="mono">${wallet.slice(0,6)}…${wallet.slice(-4)}</span>`);
+      stepIdx++;
+
+      // ---- 2. Build the bridge tx FIRST so we know approvalAddress ----
+      // (We do it before approve so we can target the exact approval address
+      // LiFi expects.)
+      const txData = await fetchBuildTx(route.route_id || route.id, 0);
+      const approvalAddr = (txData?.estimate?.approvalAddress || '').toLowerCase();
+      const txReq = txData?.transactionRequest;
+      if (!txReq || !txReq.to || !txReq.data) {
+        throw new Error('LiFi не вернул transactionRequest — возможно, маршрут устарел. Сделай поиск заново.');
+      }
+
+      // ---- 3. Approve (only for ERC-20) ------------------------------
+      if (!fromIsNative) {
+        if (!approvalAddr) throw new Error('LiFi не вернул approvalAddress');
+        const approveTx = {
+          from: wallet,
+          to: fromTokenAddr,
+          data: encodeApprove(approvalAddr, route.from_amount_raw_dec || await getRouteRawAmount(route)),
+        };
+        const apprGas = await estimateGasCost(fromChain.key, approveTx);
+        next('active', apprGas.label || 'отправка approve(...)');
+        const txHashApprove = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [approveTx],
+        });
+        next('done', linkTx(fromChain, txHashApprove));
+        stepIdx++;
+        await waitForReceipt(txHashApprove);
+      }
+
+      // ---- 4. Bridge tx ---------------------------------------------
+      const sendTx = {
+        from: wallet,
+        to: txReq.to,
+        data: txReq.data,
+        value: txReq.value || '0x0',
+      };
+      if (txReq.gasPrice) sendTx.gasPrice = txReq.gasPrice;
+      if (txReq.gasLimit) sendTx.gas = txReq.gasLimit;
+      const bridgeGas = await estimateGasCost(fromChain.key, sendTx);
+      next('active', bridgeGas.label || 'подпиши в MetaMask');
+      const txHashBridge = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [sendTx],
+      });
+      next('done', linkTx(fromChain, txHashBridge));
+      stepIdx++;
+
+      // ---- 5. Wait for source confirmation --------------------------
+      next('active');
+      await waitForReceipt(txHashBridge);
+      next('done');
+      stepIdx++;
+
+      // ---- 6. Poll cross-chain status (skipped for same-chain swaps) ----
+      if (isCrossChain) {
+        next('active', 'это занимает 30 сек – 5 мин');
+        const bridgeTool = (route.steps?.[0]?.protocol || '').toLowerCase();
+        const finalStatus = await pollLifiStatus(bridgeTool, fromChain.chain_id,
+                                                 toChain?.chain_id || 0, txHashBridge);
+        if (finalStatus === 'DONE') {
+          next('done', 'средства зачислены');
+        } else {
+          next('error', 'статус: ' + escapeHtml(finalStatus));
+        }
+      }
+      // For same-chain swaps step 4 already confirmed the receipt; nothing else to do.
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+
+  async function fetchBuildTx(routeId, stepIndex) {
+    const u = new URL('/api/bridge/build-tx', API_BASE);
+    u.searchParams.set('route_id', routeId);
+    u.searchParams.set('step', String(stepIndex));
+    const resp = await fetch(u);
+    const j = await resp.json();
+    if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
+    return j;
+  }
+  async function getRouteRawAmount(route) {
+    // We have human amount + decimals from the form. Recompute raw integer.
+    const sel = $('bridgeFromToken');
+    const opt = sel.options[sel.selectedIndex];
+    const decimals = parseInt(opt?.dataset.decimals || '18', 10);
+    return scaleAmount($('bridgeAmount').value.trim(), decimals);
+  }
+
+  function linkTx(chain, txHash) {
+    if (!chain?.explorer || !txHash) return escapeHtml(txHash || '');
+    return `<a class="mono" target="_blank" rel="noopener" href="${escapeHtml(chain.explorer)}/tx/${escapeHtml(txHash)}">${escapeHtml(txHash.slice(0,10))}…${escapeHtml(txHash.slice(-6))} ↗</a>`;
+  }
+  async function waitForReceipt(txHash) {
+    // Poll eth_getTransactionReceipt until we have one.
+    for (let i = 0; i < 180; i++) {       // up to ~6 min
+      try {
+        const r = await window.ethereum.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash],
+        });
+        if (r) {
+          if (r.status && BigInt(r.status) === 0n) {
+            throw new Error('Транзакция реверснута на источнике');
+          }
+          return r;
+        }
+      } catch (e) { /* swallow & retry */ }
+      await new Promise(rs => setTimeout(rs, 2000));
+    }
+    throw new Error('Транзакция не подтверждена за 6 мин');
+  }
+  async function pollLifiStatus(bridge, fromChain, toChain, txHash) {
+    for (let i = 0; i < 90; i++) {        // up to ~15 min total
+      try {
+        const u = new URL('/api/bridge/status', API_BASE);
+        u.searchParams.set('tx_hash', txHash);
+        if (bridge)   u.searchParams.set('bridge', bridge);
+        if (fromChain) u.searchParams.set('from_chain', fromChain);
+        if (toChain)   u.searchParams.set('to_chain', toChain);
+        const r = await fetch(u);
+        const j = await r.json();
+        const st = j.status || 'PENDING';
+        if (st === 'DONE' || st === 'FAILED') return st;
+      } catch (e) { /* keep polling */ }
+      await new Promise(rs => setTimeout(rs, 10000));
+    }
+    return 'TIMEOUT';
+  }
+  // Expose to inline onclicks generated by renderBridgeResults.
+  window.executeSwap = executeSwap;
+
+  // MEV-protect informational modal — only relevant on Ethereum mainnet
+  // because L2 sequencers don't allow public mempool sandwich attacks.
+  function showMevModal() {
+    closeSwapModal();
+    const back = document.createElement('div');
+    back.className = 'modal-backdrop';
+    back.id = 'swapModal';
+    back.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:560px;">
+        <h3>🛡️ MEV-защита для Ethereum mainnet</h3>
+        <p style="font-size:13px;line-height:1.5;color:var(--fg-soft);margin:0 0 10px;">
+          В public mempool Ethereum твою заявку на свап видят все, включая
+          MEV-боты. Они могут <b>зафронт-ранить</b> (купить токен прямо перед тобой,
+          подняв цену) и <b>забэк-ранить</b> (продать сразу после), забрав себе
+          разницу. На крупных свапах это $5–500 убытка.
+        </p>
+        <p style="font-size:13px;line-height:1.5;color:var(--fg-soft);margin:0 0 10px;">
+          На <b>L2-сетях</b> (Arbitrum, Optimism, Base, Polygon) этой проблемы нет —
+          у них приватные sequencer'ы. Защита нужна только в Ethereum mainnet.
+        </p>
+        <h4 style="margin:14px 0 6px;font-size:13px;">Как защититься</h4>
+        <ol style="font-size:12px;line-height:1.6;color:var(--fg-soft);padding-left:20px;margin:0 0 12px;">
+          <li>Открой MetaMask → <b>Settings → Networks → Ethereum Mainnet</b></li>
+          <li>В поле «New RPC URL» (или нажми «Edit») вставь:
+            <div style="margin:6px 0;padding:8px 10px;background:var(--panel-3);border-radius:6px;display:flex;justify-content:space-between;gap:6px;">
+              <code class="mono" style="font-size:12px;">https://rpc.mevblocker.io</code>
+              <button id="mevCopyBtn" type="button" style="background:var(--accent);color:#0a0d13;border:none;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Скопировать</button>
+            </div>
+          </li>
+          <li>Сохрани и используй как обычно. Все будущие свапы / переводы пойдут через
+            приватный мемпул MEV-Blocker и не будут «видны» ботам.</li>
+        </ol>
+        <p style="font-size:11px;color:var(--muted);margin:8px 0 0;">
+          Альтернативы того же класса: <a href="https://protect.flashbots.net" target="_blank" rel="noopener">Flashbots Protect</a>,
+          <a href="https://blocknative.com/transaction-distribution-network" target="_blank" rel="noopener">Blocknative</a>.
+          Все бесплатны.
+        </p>
+        <div class="modal-actions">
+          <button id="mevClose" type="button" class="primary">Понятно</button>
+        </div>
+      </div>`;
+    document.body.appendChild(back);
+    $('mevClose').addEventListener('click', closeSwapModal);
+    $('mevCopyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText('https://rpc.mevblocker.io').catch(() => {});
+      $('mevCopyBtn').textContent = '✓ скопировано';
+      setTimeout(() => { try { $('mevCopyBtn').textContent = 'Скопировать'; } catch(_){} }, 1500);
+    });
+  }
+
+  // Show MEV banner whenever Ethereum is the source chain in the swap form.
+  function updateMevBanner() {
+    const slot = $('mevBanner');
+    if (!slot) return;
+    const fromChain = $('bridgeFromChain')?.value;
+    if (fromChain === 'ethereum') {
+      slot.innerHTML =
+        `<button type="button" class="swap-btn" onclick="showMevModal()"
+                 style="background:transparent;color:var(--warn);border:1px solid var(--warn);">
+            🛡️ MEV-защита для Ethereum
+         </button>`;
+    } else {
+      slot.innerHTML = '';
+    }
+  }
+  window.showMevModal = showMevModal;
+  $('bridgeFromChain')?.addEventListener('change', updateMevBanner);
+
+  $('bridgeQuoteBtn').addEventListener('click', bridgeQuote);
+  // Re-populate the token list AND refresh the balance hint on chain change.
+  $('bridgeFromChain').addEventListener('change', () => {
+    populateBridgeTokens('bridgeFromChain', 'bridgeFromToken');
+    updateBridgeBalance();
+  });
+  $('bridgeToChain').addEventListener('change', () => {
+    populateBridgeTokens('bridgeToChain', 'bridgeToToken');
+  });
+  $('bridgeFromToken').addEventListener('change', updateBridgeBalance);
+  $('bridgeToToken').addEventListener('change', updateToTokenSecurity);
+  $('bridgeToChain').addEventListener('change', () => setTimeout(updateToTokenSecurity, 50));
+
+  // Security check for the destination token. We only spam GoPlus on actual
+  // changes; results cache 1h on the backend.
+  let __secReqId = 0;
+  async function updateToTokenSecurity() {
+    const slot = $('bridgeToSecurity');
+    if (!slot) return;
+    const opt = $('bridgeToToken').options[$('bridgeToToken').selectedIndex];
+    if (!opt || opt.dataset.native === 'true') {
+      slot.innerHTML = '<span class="sec-pill ok">native — без рисков</span>';
+      return;
+    }
+    const chainKey = $('bridgeToChain').value;
+    const addr = (opt.value || '').toLowerCase();
+    if (!chainKey || !/^0x[0-9a-f]{40}$/.test(addr)) { slot.innerHTML = ''; return; }
+    slot.innerHTML = '<span class="muted">проверяем…</span>';
+    const reqId = ++__secReqId;
+    try {
+      const r = await fetch(`${API_BASE}/api/security/token?chain=${encodeURIComponent(chainKey)}&address=${addr}`);
+      const j = await r.json();
+      if (reqId !== __secReqId) return;  // newer request superseded
+      if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+      const cls = j.verdict === 'ok'   ? 'ok'
+               : j.verdict === 'warn' ? 'warn'
+               : j.verdict === 'bad'  ? 'bad' : 'warn';
+      const icon = cls === 'ok' ? '✓' : cls === 'bad' ? '⛔' : '⚠';
+      slot.innerHTML =
+        `<span class="sec-pill ${cls}" title="${escapeHtml(j.verdict_reason || '')}">
+           ${icon} ${escapeHtml(j.verdict_reason || j.verdict)}
+         </span>`;
+    } catch (e) {
+      slot.innerHTML = `<span class="muted">проверка не прошла (${escapeHtml(e.message || e)})</span>`;
+    }
+  }
+  // Live warning when the typed amount exceeds the on-chain balance.
+  $('bridgeAmount').addEventListener('input', () => {
+    const sel = $('bridgeFromToken');
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) return;
+    const isNative = opt.dataset.native === 'true';
+    const tokenAddr = (opt.value || '').toLowerCase();
+    const chainKey = $('bridgeFromChain').value;
+    const h = findHoldingForBridge(chainKey, tokenAddr, isNative);
+    const v = parseFloat($('bridgeAmount').value);
+    const inp = $('bridgeAmount');
+    if (h && v > Number(h.amount) * 1.0001) {
+      inp.style.borderColor = 'var(--red)';
+      inp.title = 'Сумма больше доступного баланса';
+    } else {
+      inp.style.borderColor = '';
+      inp.title = '';
+    }
+  });
+
+  // Lazy-load the registry the first time the user opens the Bridges tab.
+  document.querySelector('.tab[data-tab="bridge"]').addEventListener('click', async () => {
+    if (registryData) return;
+    await loadRegistry();
+    populateBridgeChain('bridgeFromChain', 'ethereum');
+    populateBridgeChain('bridgeToChain',   'arbitrum');
+    populateBridgeTokens('bridgeFromChain', 'bridgeFromToken', 'USDC');
+    populateBridgeTokens('bridgeToChain',   'bridgeToToken',   'USDC');
+    updateBridgeBalance();
+    updateMevBanner();
+  });
+
+  // ============== Protocol deep-links ================================
+  // DeFiLlama is analytics-only; the user can't deposit from there. For each
+  // common project we map to the protocol's actual web app where deposits
+  // happen. Stable subdomains; rare to change. If a project isn't here, we
+  // fall back to DeFiLlama and the user has to navigate from there.
+  const PROTOCOL_LINKS = {
+    'aave-v3':                       { name: 'Aave',         url: 'https://app.aave.com' },
+    'aave-v2':                       { name: 'Aave (v2)',    url: 'https://app.aave.com' },
+    'compound-v3':                   { name: 'Compound',     url: 'https://app.compound.finance' },
+    'spark':                         { name: 'Spark',        url: 'https://app.spark.fi' },
+    'morpho-blue':                   { name: 'Morpho',       url: 'https://app.morpho.org' },
+    'lido':                          { name: 'Lido',         url: 'https://stake.lido.fi' },
+    'rocket-pool':                   { name: 'Rocket Pool',  url: 'https://stake.rocketpool.net' },
+    'eigenlayer':                    { name: 'EigenLayer',   url: 'https://app.eigenlayer.xyz' },
+    'ether.fi-stake':                { name: 'ether.fi',     url: 'https://app.ether.fi' },
+    'ether.fi-liquid':               { name: 'ether.fi',     url: 'https://app.ether.fi' },
+    'kelp-dao':                      { name: 'Kelp',         url: 'https://www.kelpdao.xyz' },
+    'renzo':                         { name: 'Renzo',        url: 'https://www.renzoprotocol.com' },
+    'frax-ether':                    { name: 'Frax Ether',   url: 'https://frax.finance' },
+    'pendle':                        { name: 'Pendle',       url: 'https://app.pendle.finance' },
+    'curve-dex':                     { name: 'Curve',        url: 'https://curve.fi' },
+    'convex-finance':                { name: 'Convex',       url: 'https://www.convexfinance.com' },
+    'yearn-finance':                 { name: 'Yearn',        url: 'https://yearn.fi' },
+    'balancer-v2':                   { name: 'Balancer',     url: 'https://app.balancer.fi' },
+    'aura':                          { name: 'Aura',         url: 'https://app.aura.finance' },
+    'beefy':                         { name: 'Beefy',        url: 'https://app.beefy.com' },
+    'gearbox':                       { name: 'Gearbox',      url: 'https://app.gearbox.fi' },
+    'fluid-lending':                 { name: 'Fluid',        url: 'https://fluid.instadapp.io' },
+    'instadapp-lite':                { name: 'Instadapp',    url: 'https://lite.instadapp.io' },
+    'silo-v1':                       { name: 'Silo',         url: 'https://app.silo.finance' },
+    'silo-v2':                       { name: 'Silo',         url: 'https://v2.silo.finance' },
+    'notional-v3':                   { name: 'Notional',     url: 'https://notional.finance' },
+    'clearpool-lending':             { name: 'Clearpool',    url: 'https://clearpool.finance' },
+    'maple':                         { name: 'Maple',        url: 'https://app.maple.finance' },
+    'goldfinch':                     { name: 'Goldfinch',    url: 'https://app.goldfinch.finance' },
+    'vesper':                        { name: 'Vesper',       url: 'https://app.vesper.finance/pools' },
+    'uniswap-v3':                    { name: 'Uniswap',      url: 'https://app.uniswap.org/pools' },
+    'sushiswap':                     { name: 'Sushi',        url: 'https://www.sushi.com/swap' },
+    'velodrome-v2':                  { name: 'Velodrome',    url: 'https://velodrome.finance' },
+    'aerodrome-v1':                  { name: 'Aerodrome',    url: 'https://aerodrome.finance' },
+    'gmx-v2':                        { name: 'GMX',          url: 'https://app.gmx.io' },
+    'gmx-v1':                        { name: 'GMX',          url: 'https://app.gmx.io' },
+    'trader-joe-v2.1':               { name: 'Trader Joe',   url: 'https://traderjoexyz.com/avalanche/pool' },
+    'pancakeswap-amm-v3':            { name: 'PancakeSwap',  url: 'https://pancakeswap.finance/liquidity' },
+    'quickswap-v3':                  { name: 'QuickSwap',    url: 'https://quickswap.exchange/#/pools' },
+    'stargate-v2':                   { name: 'Stargate',     url: 'https://stargate.finance/pool' },
+    'radiant-v2':                    { name: 'Radiant',      url: 'https://app.radiant.capital' },
+    'lista-lending':                 { name: 'Lista',        url: 'https://lista.org' },
+    'ondo-finance':                  { name: 'Ondo',         url: 'https://ondo.finance' },
+    'extra-finance-leverage-farming':{ name: 'Extra',        url: 'https://app.extrafi.io' },
+    'ankr-staking':                  { name: 'Ankr',         url: 'https://www.ankr.com/staking' },
+    'jito-liquid-staking':           { name: 'Jito',         url: 'https://www.jito.network' },
+    'cellar':                        { name: 'Sommelier',    url: 'https://app.somm.finance' },
+  };
+
+  function protocolLink(project) {
+    return PROTOCOL_LINKS[project] || null;
+  }
+
+  // ============== Gas estimation =====================================
+  // Returns { gwei, gas_units, native_gwei, eth, usd, rub, label } for a given
+  // {to, data, value, from} on the named chain. Best-effort — partial fields
+  // returned if some lookups fail.
+  async function estimateGasCost(chainKey, tx) {
+    try {
+      const gasUnits = await window.ethereum.request({
+        method: 'eth_estimateGas',
+        params: [tx],
+      });
+      const units = parseInt(gasUnits, 16);
+      // Pull current gas price from our /api/gas snapshot (already cached).
+      let gwei = 0;
+      try {
+        const r = await fetch(API_BASE + '/api/gas');
+        const d = await r.json();
+        const e = (d.chains || []).find(c => c.chain_key === chainKey);
+        if (e) gwei = Number(e.gwei) || 0;
+      } catch (_) {}
+      const eth = units * gwei * 1e-9;             // gas units × gwei × 1e-9 = native
+      // Native USD: fish from the user's last scan (most chains share ETH).
+      let usdPrice = 0;
+      if (lastScanData?.holdings) {
+        const native = lastScanData.holdings.find(h => h.chain_key === chainKey && h.is_native);
+        if (native && native.price_usd > 0) usdPrice = Number(native.price_usd);
+      }
+      const usd = eth * usdPrice;
+      const rub = usd * Number(lastScanData?.usd_rub_rate || 0);
+      const symbol = (lastScanData?.holdings || []).find(h => h.chain_key === chainKey && h.is_native)?.symbol
+                   || 'native';
+      return { gwei, gas_units: units, eth, usd, rub, symbol,
+               label: gasLabel(eth, symbol, usd, rub) };
+    } catch (e) {
+      return { error: e?.message || String(e), label: 'не удалось оценить газ' };
+    }
+  }
+  function gasLabel(eth, symbol, usd, rub) {
+    if (!(eth > 0)) return '';
+    const ethStr = eth.toFixed(eth >= 0.001 ? 6 : 8);
+    const parts = [`${ethStr} ${escapeHtml(symbol)}`];
+    if (usd > 0) parts.push('≈ ' + fmtMoney(usd, 'USD'));
+    if (rub > 0) parts.push(fmtMoney(rub, 'RUB'));
+    return 'Газ: ' + parts.join(' · ');
+  }
+
+  // ============== Aave V3 / Spark deposit ============================
+  // ABI: Pool.supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)
+  //   selector keccak("supply(address,uint256,address,uint16)")[:4] = 0x617ba037
+  function encodeAaveSupply(asset, amountDec, onBehalfOf) {
+    const sel = '617ba037';
+    const a   = asset.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const am  = BigInt(amountDec).toString(16).padStart(64, '0');
+    const obo = onBehalfOf.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const ref = '0'.repeat(64);  // referralCode = 0
+    return '0x' + sel + a + am + obo + ref;
+  }
+
+  // A small modal that asks for the deposit amount before kicking off the
+  // approve + supply flow. Returns the user-entered amount (as a string in
+  // human units), or null if cancelled.
+  function showDepositInputModal(pool, holding, projectedMonthlyUsd) {
+    return new Promise(resolve => {
+      closeSwapModal();
+      const back = document.createElement('div');
+      back.className = 'modal-backdrop';
+      back.id = 'swapModal';
+      const monthlyHint = projectedMonthlyUsd > 0
+        ? `<p class="muted" style="font-size:11px;margin:4px 0 12px;">
+             Доход на этой сумме ≈ <span style="color:var(--green)">${fmtMoney(projectedMonthlyUsd, 'USD')}/мес</span>
+             ${lastScanData?.usd_rub_rate ? `· ${fmtMoney(projectedMonthlyUsd * lastScanData.usd_rub_rate, 'RUB')}/мес` : ''}
+           </p>`
+        : '';
+      back.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true">
+          <h3>Депозит в Aave V3</h3>
+          <p class="muted" style="font-size:13px;margin:0 0 4px;">
+            ${escapeHtml(holding.symbol)} · ${escapeHtml(pool.chain_key)} ·
+            APY ${pool.apy.toFixed(2)}%
+          </p>
+          <p class="muted" style="font-size:13px;margin:0 0 12px;">
+            Доступно: <span class="mono">${fmtNumber(holding.amount, 8)} ${escapeHtml(holding.symbol)}</span>
+            ${holding.value_usd ? `· ${fmtMoney(holding.value_usd, 'USD')}` : ''}
+          </p>
+          ${monthlyHint}
+          <input id="depAmt" type="number" step="0.000001" value="${escapeHtml(holding.amount)}"
+                 style="width:100%;background:var(--panel-3);color:var(--fg);
+                        border:1px solid var(--border);border-radius:8px;
+                        padding:9px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                        font-size:14px;" />
+          <div class="modal-actions">
+            <button id="depCancel" type="button">Отмена</button>
+            <button id="depMax" type="button">MAX</button>
+            <button id="depGo" class="primary" type="button">Депозитить</button>
+          </div>
+          <p class="muted" style="font-size:11px;margin:12px 0 0;">
+            Будет 2 транзакции: approve + supply. Газ оплачиваешь ты, в нативном токене сети.
+          </p>
+        </div>`;
+      document.body.appendChild(back);
+
+      const finish = (val) => { closeSwapModal(); resolve(val); };
+      $('depMax').addEventListener('click', () => { $('depAmt').value = holding.amount; });
+      $('depCancel').addEventListener('click', () => finish(null));
+      $('depGo').addEventListener('click', () => {
+        const v = ($('depAmt').value || '').trim();
+        if (!v || !(parseFloat(v) > 0)) return alert('Введи положительную сумму');
+        finish(v);
+      });
+      $('depAmt').focus();
+      $('depAmt').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') $('depGo').click();
+        if (e.key === 'Escape') $('depCancel').click();
+      });
+    });
+  }
+
+  async function executeAaveDeposit(idx) {
+    return executeLendingDeposit(idx, 'aave_v3_pool', 'Aave V3');
+  }
+  async function executeSparkDeposit(idx) {
+    return executeLendingDeposit(idx, 'spark_pool', 'Spark');
+  }
+  async function executeLendingDeposit(idx, poolField, protocolName) {
+    const pool = (window.__yieldPools || [])[idx];
+    if (!pool) return alert('Пул не найден');
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!registryData) await loadRegistry();
+
+    const chain = registryData?.chains.find(c => c.key === pool.chain_key);
+    if (!chain) return alert('Сеть не поддерживается приложением');
+    if (!chain[poolField]) return alert(`Адрес ${protocolName} Pool для этой сети не настроен`);
+    const poolAddr = chain[poolField];
+
+    // Find the underlying token in our registry (DeFiLlama pool symbol matches it).
+    const tok = chain.tokens.find(t =>
+      (t.symbol || '').toUpperCase() === (pool.symbol || '').toUpperCase());
+    if (!tok) {
+      return alert(`Токен ${pool.symbol} не в реестре приложения. Добавь его в config/tokens.json и пересобери.`);
+    }
+    if (tok.is_native) {
+      return alert(`${protocolName} не принимает нативный токен напрямую. Используй WETH/WMATIC и т.д.`);
+    }
+
+    // Find user's matching holding (must exist — button is gated on it).
+    const holding = lastScanData?.holdings.find(h =>
+      h.chain_key === chain.key &&
+      (h.symbol || '').toUpperCase() === (tok.symbol || '').toUpperCase() &&
+      !h.is_native);
+    if (!holding) return alert(`Нет ${tok.symbol} на твоём адресе в сети ${chain.name}`);
+
+    // Ask for amount.
+    const projectedMonthly = (Number(holding.value_usd) || 0) * (pool.apy / 100) / 12;
+    const humanAmt = await showDepositInputModal(pool, holding, projectedMonthly);
+    if (!humanAmt) return;
+    const rawAmount = scaleAmount(humanAmt, tok.decimals);
+    if (!rawAmount || rawAmount === '0') return alert('Неверная сумма');
+
+    // Sanity check: not more than balance.
+    const balanceRaw = scaleAmount(String(holding.amount), tok.decimals);
+    if (balanceRaw && BigInt(rawAmount) > BigInt(balanceRaw)) {
+      if (!confirm('Сумма больше баланса. Продолжить — Aave всё равно реверснёт. ОК?')) return;
+    }
+
+    // Progress modal: switch chain → approve → supply → wait.
+    const steps = [
+      `Переключиться на сеть «${chain.name}»`,
+      `Approve ${tok.symbol} для ${protocolName}`,
+      `Supply в ${protocolName}`,
+      `Дождаться подтверждения`,
+    ];
+    showSwapModal(steps);
+    let stepIdx = 0;
+    const next = (state, detail) => setSwapStep(stepIdx, state, detail);
+
+    try {
+      // 1. Switch chain
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accs || !accs.length) throw new Error('Аккаунт не подключён');
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== chain.chain_id) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex(chain.chain_id) }],
+        });
+      }
+      next('done', `аккаунт <span class="mono">${wallet.slice(0,6)}…${wallet.slice(-4)}</span>`);
+      stepIdx++;
+
+      // 2. Approve
+      const approveTx = {
+        from: wallet,
+        to: tok.address,
+        data: encodeApprove(poolAddr, rawAmount),
+      };
+      const apprGas = await estimateGasCost(chain.key, approveTx);
+      next('active', apprGas.label || 'оцениваем газ…');
+      const txApprove = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [approveTx],
+      });
+      next('done', linkTx(chain, txApprove));
+      stepIdx++;
+      await waitForReceipt(txApprove);
+
+      // 3. Supply
+      const supplyData = encodeAaveSupply(tok.address, rawAmount, wallet);
+      const supplyTx = { from: wallet, to: poolAddr, data: supplyData };
+      const supGas = await estimateGasCost(chain.key, supplyTx);
+      next('active', supGas.label || 'оцениваем газ…');
+      const txSupply = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [supplyTx],
+      });
+      next('done', linkTx(chain, txSupply));
+      stepIdx++;
+
+      // 4. Receipt
+      next('active');
+      await waitForReceipt(txSupply);
+      next('done', 'депозит зачислен');
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.executeAaveDeposit = executeAaveDeposit;
+  window.executeSparkDeposit = executeSparkDeposit;
+
+  // ---- Aave V3 withdraw -----------------------------------------------
+  // ABI: Pool.withdraw(address asset, uint256 amount, address to)
+  //   selector keccak("withdraw(address,uint256,address)")[:4] = 0x69328dec
+  // Pass amount = 2^256-1 to withdraw the full balance (Aave magic value).
+  function encodeAaveWithdraw(asset, amountDec, to) {
+    const sel = '69328dec';
+    const a   = asset.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const am  = BigInt(amountDec).toString(16).padStart(64, '0');
+    const t   = to.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    return '0x' + sel + a + am + t;
+  }
+
+  async function executeAaveWithdraw(idx) {
+    const pos = (window.__aaveSupplies || [])[idx];
+    if (!pos) return alert('Позиция не найдена');
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!registryData) await loadRegistry();
+    const chain = registryData?.chains.find(c => c.key === pos.chain_key);
+    if (!chain) return alert('Сеть не поддерживается');
+    // Spark uses the same withdraw ABI, just a different pool address.
+    const isSpark = pos.protocol === 'Spark';
+    const poolAddr = isSpark ? chain.spark_pool : chain.aave_v3_pool;
+    if (!poolAddr) return alert(`Адрес ${pos.protocol} Pool не настроен для этой сети`);
+
+    // Suggest the full balance by default; user can edit.
+    const suggested = pos.amount0 || '';
+    const human = prompt(
+      `Снять с Aave V3:\n\n${pos.token0_symbol} (${chain.name})\nДоступно: ${suggested}\n\nСумма для снятия (или MAX = всё):`,
+      suggested);
+    if (!human) return;
+
+    let rawAmount;
+    if (human.toUpperCase() === 'MAX') {
+      // Aave's "withdraw all" sentinel.
+      rawAmount = ((1n << 256n) - 1n).toString();
+    } else {
+      rawAmount = scaleAmount(human.trim(), pos.decimals0 || 18);
+      if (!rawAmount || rawAmount === '0') return alert('Неверная сумма');
+    }
+
+    showSwapModal([
+      `Переключиться на сеть «${chain.name}»`,
+      `Withdraw ${pos.token0_symbol} из ${pos.protocol}`,
+      `Дождаться подтверждения`,
+    ]);
+    let stepIdx = 0;
+    const next = (state, detail) => setSwapStep(stepIdx, state, detail);
+
+    try {
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== chain.chain_id) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex(chain.chain_id) }],
+        });
+      }
+      next('done', `аккаунт <span class="mono">${wallet.slice(0,6)}…${wallet.slice(-4)}</span>`);
+      stepIdx++;
+
+      const tx = {
+        from: wallet,
+        to: poolAddr,
+        data: encodeAaveWithdraw(pos.token0_address, rawAmount, wallet),
+      };
+      const gas = await estimateGasCost(chain.key, tx);
+      next('active', gas.label || 'оцениваем газ…');
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [tx],
+      });
+      next('done', linkTx(chain, txHash));
+      stepIdx++;
+
+      next('active');
+      await waitForReceipt(txHash);
+      next('done', 'средства возвращены на твой кошелёк');
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.executeAaveWithdraw = executeAaveWithdraw;
+
+  // ============== Compound V3 deposit / withdraw =====================
+  // Comet ABI:
+  //   supply(address, uint256)    -> 0xf2b9fdb8
+  //   withdraw(address, uint256)  -> 0xf3fef3a3
+  function encodeCometSupply(asset, amountDec) {
+    const a  = asset.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const am = BigInt(amountDec).toString(16).padStart(64, '0');
+    return '0x' + 'f2b9fdb8' + a + am;
+  }
+  function encodeCometWithdraw(asset, amountDec) {
+    const a  = asset.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    const am = BigInt(amountDec).toString(16).padStart(64, '0');
+    return '0x' + 'f3fef3a3' + a + am;
+  }
+
+  async function executeCompoundDeposit(idx) {
+    const pool = (window.__yieldPools || [])[idx];
+    if (!pool) return alert('Пул не найден');
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!registryData) await loadRegistry();
+    const chain = registryData?.chains.find(c => c.key === pool.chain_key);
+    if (!chain) return alert('Сеть не поддерживается');
+
+    // Find which Comet market matches the pool's symbol.
+    const market = (chain.compound_v3_markets || []).find(
+      m => (m.base_symbol || '').toUpperCase() === (pool.symbol || '').toUpperCase());
+    if (!market) {
+      return alert(`Compound V3 market для ${pool.symbol} не настроен в этой сети`);
+    }
+
+    const holding = lastScanData?.holdings.find(h =>
+      h.chain_key === chain.key &&
+      (h.symbol || '').toUpperCase() === (market.base_symbol || '').toUpperCase() &&
+      !h.is_native);
+    if (!holding) return alert(`Нет ${market.base_symbol} на твоём адресе в сети ${chain.name}`);
+
+    const projectedMonthly = (Number(holding.value_usd) || 0) * (pool.apy / 100) / 12;
+    const humanAmt = await showDepositInputModal(
+      { ...pool, project: 'compound-v3', chain_key: chain.key },
+      holding, projectedMonthly);
+    if (!humanAmt) return;
+    const rawAmount = scaleAmount(humanAmt, market.base_decimals);
+    if (!rawAmount || rawAmount === '0') return alert('Неверная сумма');
+
+    showSwapModal([
+      `Переключиться на сеть «${chain.name}»`,
+      `Approve ${market.base_symbol} для Compound V3`,
+      `Supply в Compound V3 (${market.base_symbol} market)`,
+      `Дождаться подтверждения`,
+    ]);
+    let stepIdx = 0;
+    const next = (s, d) => setSwapStep(stepIdx, s, d);
+
+    try {
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== chain.chain_id) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex(chain.chain_id) }],
+        });
+      }
+      next('done', `аккаунт <span class="mono">${wallet.slice(0,6)}…${wallet.slice(-4)}</span>`);
+      stepIdx++;
+
+      const apprTx = { from: wallet, to: market.base_address,
+                       data: encodeApprove(market.comet, rawAmount) };
+      const apprGas = await estimateGasCost(chain.key, apprTx);
+      next('active', apprGas.label || '');
+      const txA = await window.ethereum.request({ method: 'eth_sendTransaction', params: [apprTx] });
+      next('done', linkTx(chain, txA));
+      stepIdx++;
+      await waitForReceipt(txA);
+
+      const supTx = { from: wallet, to: market.comet,
+                      data: encodeCometSupply(market.base_address, rawAmount) };
+      const supGas = await estimateGasCost(chain.key, supTx);
+      next('active', supGas.label || '');
+      const txS = await window.ethereum.request({ method: 'eth_sendTransaction', params: [supTx] });
+      next('done', linkTx(chain, txS));
+      stepIdx++;
+
+      next('active');
+      await waitForReceipt(txS);
+      next('done', 'депозит зачислен');
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.executeCompoundDeposit = executeCompoundDeposit;
+
+  // Withdraw is invoked from the DeFi positions tab on a Compound V3 supply row.
+  window.__compoundSupplies = [];
+  async function executeCompoundWithdraw(idx) {
+    const pos = (window.__compoundSupplies || [])[idx];
+    if (!pos) return alert('Позиция не найдена');
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!registryData) await loadRegistry();
+    const chain = registryData?.chains.find(c => c.key === pos.chain_key);
+    if (!chain) return alert('Сеть не поддерживается');
+    const market = (chain.compound_v3_markets || []).find(
+      m => m.base_address.toLowerCase() === (pos.token0_address || '').toLowerCase());
+    if (!market) return alert('Не нашли Compound market для этой позиции');
+
+    const human = prompt(
+      `Снять с Compound V3:\n\n${pos.token0_symbol} (${chain.name})\nДоступно: ${pos.amount0}\n\n` +
+      `Сумма (или MAX = всё):`, pos.amount0 || '');
+    if (!human) return;
+    let rawAmount;
+    if (human.toUpperCase() === 'MAX') {
+      rawAmount = ((1n << 256n) - 1n).toString();
+    } else {
+      rawAmount = scaleAmount(human.trim(), market.base_decimals);
+      if (!rawAmount || rawAmount === '0') return alert('Неверная сумма');
+    }
+
+    showSwapModal([
+      `Переключиться на сеть «${chain.name}»`,
+      `Withdraw ${market.base_symbol} из Compound V3`,
+      `Дождаться подтверждения`,
+    ]);
+    let stepIdx = 0;
+    const next = (s, d) => setSwapStep(stepIdx, s, d);
+
+    try {
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== chain.chain_id) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex(chain.chain_id) }],
+        });
+      }
+      next('done');
+      stepIdx++;
+
+      const tx = { from: wallet, to: market.comet,
+                   data: encodeCometWithdraw(market.base_address, rawAmount) };
+      const gas = await estimateGasCost(chain.key, tx);
+      next('active', gas.label || '');
+      const txH = await window.ethereum.request({ method: 'eth_sendTransaction', params: [tx] });
+      next('done', linkTx(chain, txH));
+      stepIdx++;
+
+      next('active');
+      await waitForReceipt(txH);
+      next('done', 'средства возвращены');
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.executeCompoundWithdraw = executeCompoundWithdraw;
+
+  // ============== Lido stETH staking =================================
+  // Lido contract on Ethereum mainnet only.
+  const LIDO_ETH_CONTRACT = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
+  // submit(address referrer) -> 0xa1903eab
+  function encodeLidoSubmit(referrer) {
+    const r = (referrer || '0x0000000000000000000000000000000000000000')
+              .toLowerCase().replace(/^0x/, '').padStart(64, '0');
+    return '0x' + 'a1903eab' + r;
+  }
+  async function executeLidoStake(idx) {
+    const pool = (window.__yieldPools || [])[idx];
+    if (!pool) return alert('Пул не найден');
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (pool.chain_key !== 'ethereum') {
+      return alert('Lido работает только в Ethereum mainnet');
+    }
+    if (!registryData) await loadRegistry();
+    const chain = registryData?.chains.find(c => c.key === 'ethereum');
+    if (!chain) return alert('Конфиг Ethereum не найден');
+
+    const ethHolding = lastScanData?.holdings.find(h => h.chain_key === 'ethereum' && h.is_native);
+    const balanceStr = ethHolding ? String(ethHolding.amount) : '0';
+    const human = prompt(
+      `Стейк ETH через Lido (получишь stETH):\n\n` +
+      `На балансе: ${balanceStr} ETH\n` +
+      `APY ${pool.apy.toFixed(2)}%\n\n` +
+      `Сколько ETH стейкать? (оставь немного на газ — 0.005-0.01 ETH)`,
+      balanceStr ? Math.max(0, parseFloat(balanceStr) - 0.005).toFixed(6) : '');
+    if (!human) return;
+    const rawAmount = scaleAmount(human.trim(), 18);
+    if (!rawAmount || rawAmount === '0') return alert('Неверная сумма');
+
+    showSwapModal([
+      `Переключиться на Ethereum`,
+      `Стейк ETH через Lido (получишь stETH)`,
+      `Дождаться подтверждения`,
+    ]);
+    let stepIdx = 0;
+    const next = (s, d) => setSwapStep(stepIdx, s, d);
+
+    try {
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== 1) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x1' }],
+        });
+      }
+      next('done');
+      stepIdx++;
+
+      const tx = {
+        from: wallet,
+        to: LIDO_ETH_CONTRACT,
+        data: encodeLidoSubmit(null),
+        value: '0x' + BigInt(rawAmount).toString(16),
+      };
+      const gas = await estimateGasCost('ethereum', tx);
+      next('active', gas.label || '');
+      const txH = await window.ethereum.request({ method: 'eth_sendTransaction', params: [tx] });
+      next('done', linkTx(chain, txH));
+      stepIdx++;
+
+      next('active');
+      await waitForReceipt(txH);
+      next('done', 'stETH зачислен — токен сразу начнёт расти от стейкинг-наград');
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.executeLidoStake = executeLidoStake;
+
+  // ============== Yield scanner ======================================
+  function buildYieldQuery() {
+    const params = new URLSearchParams();
+
+    // Pull symbols + chains the user actually holds.
+    const mySymbols = new Set();
+    const myChains  = new Set();
+    if (lastScanData?.holdings) {
+      for (const h of lastScanData.holdings) {
+        if (h.symbol) mySymbols.add(h.symbol.toUpperCase());
+        if (h.chain_key) myChains.add(h.chain_key);
+      }
+    }
+
+    if ($('yldOnlyMyTokens').checked && mySymbols.size > 0) {
+      params.set('symbols', Array.from(mySymbols).join(','));
+    }
+    if ($('yldOnlyMyChains').checked && myChains.size > 0) {
+      params.set('chains', Array.from(myChains).join(','));
+    }
+    const minTvl = parseFloat($('yldMinTvl').value);
+    if (!isNaN(minTvl) && minTvl > 0) params.set('min_tvl', String(minTvl));
+    const minApy = parseFloat($('yldMinApy').value);
+    if (!isNaN(minApy)) params.set('min_apy', String(minApy));
+    if ($('yldStableOnly').checked) params.set('stable_only', '1');
+    if ($('yldNoIL').checked)       params.set('no_il', '1');
+    if ($('yldSingleOnly').checked) params.set('single_only', '1');
+    params.set('limit', '60');
+    return params;
+  }
+
+  async function refreshYields() {
+    const root = $('yieldResult');
+    root.innerHTML = '<div class="loading">Опрашиваем DeFiLlama (первый раз грузит ~5 МБ — пара секунд)…</div>';
+    try {
+      const params = buildYieldQuery();
+      const url = `${API_BASE}/api/yield/scan?${params.toString()}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status);
+      renderYields(data);
+      // Also rebuild the optimizer view — fresh yield data may change the
+      // "best alternative" picks.
+      await ensureIdleYieldCache();
+      renderYieldOptimizer();
+    } catch (e) {
+      root.innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || e)}</div>`;
+    }
+  }
+
+  function apyClass(apy) {
+    if (apy >= 8) return 'high';
+    if (apy >= 3) return 'med';
+    return 'low';
+  }
+
+  // Find holdings that match a yield pool — same chain + symbol appears in the
+  // pool's symbol token list. Returns total USD value the user already has
+  // available to deposit into this pool.
+  function holdingsForPool(pool) {
+    if (!lastScanData?.holdings) return { total_usd: 0, items: [] };
+    const parts = (pool.symbol || '').split(/[-+\/ ]/).map(s => s.toUpperCase()).filter(Boolean);
+    const items = lastScanData.holdings.filter(h =>
+      h.chain_key === pool.chain_key &&
+      parts.includes((h.symbol || '').toUpperCase())
+    );
+    const total_usd = items.reduce((a, h) => a + Number(h.value_usd || 0), 0);
+    return { total_usd, items };
+  }
+
+  function renderYields(data) {
+    const root = $('yieldResult');
+    const pools = data.pools || [];
+    if (!pools.length) {
+      root.innerHTML = `<div class="empty">Подходящих пулов не найдено. Попробуй ослабить фильтры (снизить TVL или APY).</div>`;
+      return;
+    }
+    const rubRate = Number(lastScanData?.usd_rub_rate || 0);
+    let html = `<div class="muted" style="font-size:11px;margin-bottom:10px;">
+      найдено ${pools.length} из ${data.cached || '?'} в кэше DeFiLlama · сортировка по APY
+    </div>`;
+    html += `
+      <table>
+        <thead><tr>
+          <th>Сеть</th>
+          <th>Протокол · пул</th>
+          <th class="num">TVL</th>
+          <th class="num">APY</th>
+          <th class="num" title="На твой текущий баланс этого токена в этой сети">Доход / мес</th>
+          <th>Метки</th>
+          <th></th>
+        </tr></thead>
+        <tbody>`;
+    pools.forEach((p, idx) => {
+      const cls = apyClass(p.apy);
+      const reward = p.apy_reward > 0
+        ? `<span class="apy-sub">${(p.apy_base || 0).toFixed(2)}% база + ${p.apy_reward.toFixed(2)}% reward</span>`
+        : '';
+      const meanLine = p.apy_mean_30d > 0
+        ? `<span class="apy-sub" title="Средний APY за 30 дней">~ ${p.apy_mean_30d.toFixed(2)}% (30д)</span>`
+        : '';
+
+      const tags = [];
+      if (p.stablecoin) tags.push('<span class="risk-tag r-stable">stable</span>');
+      if (p.exposure === 'single') tags.push('<span class="risk-tag r-no">single</span>');
+      else if (p.exposure === 'multi') tags.push('<span class="risk-tag r-multi">multi</span>');
+      if (p.il_risk === 'yes') tags.push('<span class="risk-tag r-yes">IL</span>');
+      else if (p.il_risk === 'no') tags.push('<span class="risk-tag r-no">no IL</span>');
+
+      // Monthly earnings projection on user's actual balance.
+      const { total_usd: balanceUsd } = holdingsForPool(p);
+      let monthlyCell;
+      if (balanceUsd > 0 && p.apy > 0) {
+        const monthlyUsd = balanceUsd * (p.apy / 100) / 12;
+        const monthlyRub = monthlyUsd * rubRate;
+        monthlyCell = `
+          <div class="apy-cell high">+ ${fmtMoney(monthlyUsd, 'USD')}</div>
+          ${rubRate ? `<span class="apy-sub">≈ ${fmtMoney(monthlyRub, 'RUB')}</span>` : ''}
+          <span class="apy-sub">на ${fmtMoney(balanceUsd, 'USD')}</span>`;
+      } else {
+        monthlyCell = `<span class="muted">—</span>
+          <span class="apy-sub">нет в кошельке</span>`;
+      }
+
+      // Action: in-app deposit for protocols we have ABI bindings for; deep
+      // link to the protocol's web app for the rest. DeFiLlama only as 📊.
+      const inAppFn =
+        (p.project === 'aave-v3' && balanceUsd > 0) ? `executeAaveDeposit(${idx})` :
+        (p.project === 'spark'   && balanceUsd > 0) ? `executeSparkDeposit(${idx})` :
+        (p.project === 'compound-v3' && balanceUsd > 0) ? `executeCompoundDeposit(${idx})` :
+        (p.project === 'lido' && p.chain_key === 'ethereum') ? `executeLidoStake(${idx})` :
+        null;
+      const link   = protocolLink(p.project);
+      let actionCell = '';
+      if (inAppFn) {
+        const label = p.project === 'lido' ? 'Стейк' : 'Депозит';
+        actionCell = `<button class="swap-btn" onclick="${inAppFn}" title="In-app через MetaMask">${label}</button>`;
+      } else if (link) {
+        actionCell = `<a class="swap-btn" href="${escapeHtml(link.url)}" target="_blank" rel="noopener"
+                         title="Открыть приложение ${escapeHtml(link.name)} — там можно депозитить"
+                         style="text-decoration:none;display:inline-block;">В ${escapeHtml(link.name)} ↗</a>`;
+      } else {
+        actionCell = `<a class="swap-btn" href="${escapeHtml(p.url)}" target="_blank" rel="noopener"
+                         title="Не нашли прямой ссылки на протокол — открой DeFiLlama, там в правом верхнем углу пула есть кнопка 'Open Pool'"
+                         style="text-decoration:none;display:inline-block;">Аналитика ↗</a>`;
+      }
+      // Always also show small DeFiLlama icon for analytics (charts/holders).
+      actionCell += ` <a class="tiny-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener"
+                          title="DeFiLlama: история APY, держатели, ликвидность">📊</a>`;
+
+      // Stash the pool data so the click handler can find it without DOM walks.
+      window.__yieldPools = window.__yieldPools || [];
+      window.__yieldPools[idx] = p;
+
+      const rowCls = balanceUsd > 0 ? 'holding-row owned' : 'holding-row';
+      html += `
+        <tr class="${rowCls}">
+          <td>${chainBadge(p.chain_key)}</td>
+          <td>
+            <div class="token-name">${escapeHtml(p.project)}</div>
+            <div class="token-sub">${escapeHtml(p.symbol)}</div>
+          </td>
+          <td class="num">${fmtMoney(p.tvl_usd, 'USD')}</td>
+          <td class="num">
+            <span class="apy-cell ${cls}">${p.apy.toFixed(2)}%</span>
+            ${reward}
+            ${meanLine}
+          </td>
+          <td class="num">${monthlyCell}</td>
+          <td>${tags.join(' ')}</td>
+          <td class="num">${actionCell}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    root.innerHTML = html;
+  }
+
+  // ============== Yield optimizer ====================================
+  // The optimizer compares each holding (and existing DeFi position) against
+  // the best safe pool we have data for, and suggests concrete moves.
+  //
+  // Approximations (deliberate, for honesty):
+  //   * "current APY" of an idle holding = 0%
+  //   * "current APY" of a known DeFi supply = pool APY for that protocol+token
+  //     if we can match it; otherwise 0 (conservative)
+  //   * Bridge cost is rough: $1 on L2s, $5 on Ethereum
+  //   * No accounting for slippage on swap-and-deposit
+  // The numbers are directional, not financial advice.
+  function bestPoolByPredicate(pools, pred) {
+    let best = null;
+    for (const p of pools) {
+      if (!pred(p)) continue;
+      if (!best || p.apy > best.apy) best = p;
+    }
+    return best;
+  }
+  function existingApyForHolding(h, scan) {
+    // If the user already supplied this token in any known protocol on this
+    // chain, treat that protocol's APY as their current rate.
+    const positions = scan?.defi_positions || [];
+    const sym = (h.symbol || '').toUpperCase();
+    for (const p of positions) {
+      if (p.kind !== 'supply') continue;
+      if (p.chain_key !== h.chain_key) continue;
+      if ((p.token0_symbol || '').toUpperCase() !== sym) continue;
+      // We don't store APY on positions — return 0 here; UI will show "?"
+      // when the position exists but the optimizer can't be sure of APY.
+      return null;
+    }
+    return 0;  // truly idle
+  }
+  function estBridgeCostUsd(fromChain, toChain) {
+    if (fromChain === toChain) return 0;
+    // Very rough — Ethereum is the expensive one, L2-to-L2 is pennies.
+    if (fromChain === 'ethereum' || toChain === 'ethereum') return 5.0;
+    return 1.0;
+  }
+
+  function renderYieldOptimizer() {
+    const card = $('yieldOptimizer');
+    const body = $('optimizerBody');
+    if (!card || !body) return;
+    if (!lastScanData?.holdings || !idleYieldCache) {
+      card.style.display = 'none';
+      return;
+    }
+    const rubRate = Number(lastScanData.usd_rub_rate || 0);
+
+    // Walk holdings, compute (current apy, best in-chain alt, best cross-chain alt).
+    const recs = [];
+    let totalUsd = 0, weightedCurrentApy = 0, weightedBestApy = 0;
+    for (const h of lastScanData.holdings) {
+      const valUsd = Number(h.value_usd) || 0;
+      if (valUsd < 10) continue;     // dust
+      totalUsd += valUsd;
+
+      const curApy = existingApyForHolding(h, lastScanData);  // 0 = idle, null = unknown DeFi
+      const sym = (h.symbol || '').toUpperCase();
+
+      // Best same-chain alternative — single-symbol pools only (no LP).
+      const sameChain = bestPoolByPredicate(idleYieldCache, (p) =>
+        p.chain_key === h.chain_key &&
+        (p.symbol || '').toUpperCase() === sym &&
+        (p.exposure === 'single' || (p.symbol || '').indexOf('-') < 0) &&
+        p.il_risk !== 'yes' && p.tvl_usd >= 5_000_000);
+
+      // Best cross-chain alternative.
+      const crossChain = bestPoolByPredicate(idleYieldCache, (p) =>
+        p.chain_key !== h.chain_key &&
+        (p.symbol || '').toUpperCase() === sym &&
+        (p.exposure === 'single' || (p.symbol || '').indexOf('-') < 0) &&
+        p.il_risk !== 'yes' && p.tvl_usd >= 5_000_000);
+
+      const knownCur = curApy === null ? 0 : curApy;
+      weightedCurrentApy += valUsd * knownCur;
+
+      // Pick the most attractive of the two alternatives, accounting for bridge cost.
+      const candidates = [];
+      if (sameChain) {
+        candidates.push({
+          pool: sameChain, apy: sameChain.apy,
+          gainPctYr: Math.max(0, sameChain.apy - knownCur),
+          bridgeCost: 0, sameChain: true,
+        });
+      }
+      if (crossChain && (!sameChain || crossChain.apy > sameChain.apy + 0.5)) {
+        const cost = estBridgeCostUsd(h.chain_key, crossChain.chain_key);
+        const yearlyGainUsd = valUsd * (crossChain.apy - knownCur) / 100;
+        const breakEvenDays = yearlyGainUsd > 0 ? (cost / yearlyGainUsd) * 365 : Infinity;
+        candidates.push({
+          pool: crossChain, apy: crossChain.apy,
+          gainPctYr: Math.max(0, crossChain.apy - knownCur),
+          bridgeCost: cost, breakEvenDays, sameChain: false,
+        });
+      }
+      const best = candidates.length ? candidates[0] : null;
+      const bestApy = best ? best.apy : knownCur;
+      weightedBestApy += valUsd * bestApy;
+
+      // Skip recommendation if gain is tiny (<0.5%) or break-even is too long.
+      if (best && (best.apy - knownCur) >= 0.5 &&
+          (best.sameChain || (best.breakEvenDays || Infinity) <= 60)) {
+        recs.push({ h, curApy, best });
+      }
+    }
+
+    if (totalUsd === 0) { card.style.display = 'none'; return; }
+    const curAvg  = weightedCurrentApy / totalUsd;
+    const bestAvg = weightedBestApy / totalUsd;
+    const gainUsdYear = totalUsd * (bestAvg - curAvg) / 100;
+    const gainUsdMonth = gainUsdYear / 12;
+
+    // If current ≈ optimal, hide entirely — no work to do.
+    if (gainUsdYear < 1 && recs.length === 0) { card.style.display = 'none'; return; }
+
+    card.style.display = '';
+
+    // Sort recommendations by absolute monthly gain (high to low).
+    recs.sort((a, b) => {
+      const av = Number(a.h.value_usd) * (a.best.apy - (a.curApy || 0)) / 12 / 100;
+      const bv = Number(b.h.value_usd) * (b.best.apy - (b.curApy || 0)) / 12 / 100;
+      return bv - av;
+    });
+
+    let html = `
+      <div class="opt-summary">
+        <div class="opt-stat">
+          <div class="label">Текущий APY портфеля</div>
+          <div class="val">${curAvg.toFixed(2)}%</div>
+          <div class="delta">взвешенно по USD</div>
+        </div>
+        <div class="opt-stat highlight">
+          <div class="label">Потенциальный APY</div>
+          <div class="val">${bestAvg.toFixed(2)}%</div>
+          <div class="delta pos">+${(bestAvg - curAvg).toFixed(2)}% при тех же рисках</div>
+        </div>
+        <div class="opt-stat">
+          <div class="label">Дополнительный доход</div>
+          <div class="val">+${fmtMoney(gainUsdYear, 'USD')}/год</div>
+          <div class="delta pos">${fmtMoney(gainUsdMonth, 'USD')}/мес${rubRate ? ' · ' + fmtMoney(gainUsdMonth * rubRate, 'RUB') : ''}</div>
+        </div>
+      </div>`;
+
+    if (!recs.length) {
+      html += '<div class="empty">Все твои позиции уже близки к оптимуму. 👍</div>';
+      body.innerHTML = html;
+      return;
+    }
+
+    html += '<h3 style="margin: 14px 0 8px; font-size: 14px;">Что можно сделать сейчас</h3>';
+    window.__optRecs = recs;
+    recs.forEach((r, idx) => {
+      const valUsd = Number(r.h.value_usd) || 0;
+      const monthly = valUsd * (r.best.apy - (r.curApy || 0)) / 100 / 12;
+      const monthlyRub = monthly * rubRate;
+      const cur = (r.curApy || 0).toFixed(2);
+      const target = r.best.apy.toFixed(2);
+
+      const breakEvenLine = r.best.sameChain
+        ? `на той же сети`
+        : (r.best.breakEvenDays !== undefined && r.best.breakEvenDays !== Infinity
+             ? `мост ≈ ${fmtMoney(r.best.bridgeCost, 'USD')}, окупится за ${r.best.breakEvenDays.toFixed(0)} дн.`
+             : 'требуется мост');
+      const breakEvenCls = r.best.sameChain ? 'fast'
+        : (r.best.breakEvenDays || 999) <= 14 ? 'fast'
+        : (r.best.breakEvenDays || 999) <= 30 ? '' : 'slow';
+
+      // Action: matches existing handlers when project supported in-app, else
+      // deep link.
+      const link = protocolLink(r.best.pool.project);
+      const projectKnown = ['aave-v3','spark','compound-v3','lido']
+        .includes(r.best.pool.project);
+      const actHtml = (r.best.sameChain && projectKnown)
+        ? `<button class="swap-btn" onclick="executeOptimizerStep(${idx})">Сделать</button>`
+        : `<a class="swap-btn" href="${escapeHtml(link?.url || r.best.pool.url)}"
+              target="_blank" rel="noopener" style="text-decoration:none;">
+             ${r.best.sameChain ? 'В' : 'Через мост в'} ${escapeHtml(link?.name || r.best.pool.project)} ↗
+           </a>`;
+
+      html += `
+        <div class="opt-row">
+          <span>${chainBadge(r.h.chain_key)}</span>
+          <div>
+            <div class="arrow-from-to">
+              <span><strong>${fmtNumber(r.h.amount, 6)} ${escapeHtml(r.h.symbol)}</strong>
+                <span class="muted">· ${fmtMoney(valUsd, 'USD')}</span></span>
+              <span class="step">→</span>
+              <span class="protocol-tag">${escapeHtml(r.best.pool.project)}</span>
+              ${r.best.sameChain
+                ? ''
+                : '<span class="step">на ' + escapeHtml((CHAIN_META[r.best.pool.chain_key]||{}).label || r.best.pool.chain_key) + '</span>'}
+            </div>
+            <div class="breakeven ${breakEvenCls}">
+              ${cur}% → ${target}% · ${escapeHtml(breakEvenLine)}
+            </div>
+          </div>
+          <div class="opt-gain">
+            <div class="big">+${fmtMoney(monthly, 'USD')}/мес</div>
+            ${rubRate ? `<div class="sub">≈ ${fmtMoney(monthlyRub, 'RUB')}</div>` : ''}
+            <div class="sub">+${(r.best.apy - (r.curApy || 0)).toFixed(2)}% APY</div>
+          </div>
+          ${actHtml}
+        </div>`;
+    });
+    body.innerHTML = html;
+  }
+
+  // For "Сделать" buttons in optimizer rows. Only fires for same-chain moves
+  // into protocols we have ABI for; cross-chain still goes via deep link.
+  async function executeOptimizerStep(idx) {
+    const r = (window.__optRecs || [])[idx];
+    if (!r) return;
+    const project = r.best.pool.project;
+    // Map this rec's pool back into our yield-table click handlers by
+    // pretending it's a Yield-tab pool click.
+    window.__yieldPools = window.__yieldPools || [];
+    const fakeIdx = window.__yieldPools.length;
+    window.__yieldPools.push(r.best.pool);
+
+    if (project === 'aave-v3')      return executeAaveDeposit(fakeIdx);
+    if (project === 'spark')        return executeSparkDeposit(fakeIdx);
+    if (project === 'compound-v3')  return executeCompoundDeposit(fakeIdx);
+    if (project === 'lido')         return executeLidoStake(fakeIdx);
+
+    // Fallback: open the protocol UI.
+    const link = protocolLink(project);
+    if (link) window.open(link.url, '_blank');
+    else window.open(r.best.pool.url, '_blank');
+  }
+  window.executeOptimizerStep = executeOptimizerStep;
+
+  $('yldRefresh').addEventListener('click', refreshYields);
+  // Auto-refresh on filter change (with light debounce).
+  let yldDebounce = null;
+  ['yldOnlyMyTokens','yldOnlyMyChains','yldStableOnly','yldNoIL','yldSingleOnly','yldMinTvl','yldMinApy'].forEach(id => {
+    $(id).addEventListener('input', () => {
+      clearTimeout(yldDebounce);
+      yldDebounce = setTimeout(refreshYields, 300);
+    });
+  });
+  // Lazy load the first time user opens the tab.
+  document.querySelector('.tab[data-tab="yield"]').addEventListener('click', () => {
+    if (!$('yieldResult').dataset.loaded) {
+      $('yieldResult').dataset.loaded = '1';
+      refreshYields();
+    }
+  });
+
+  // ============== Approvals manager ==================================
+  let lastApprovals = [];
+
+  async function refreshApprovals() {
+    const addr = $('addrInput').value.trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      $('apprResult').innerHTML = '<div class="error">Сначала введи адрес или подключи MetaMask.</div>';
+      return;
+    }
+    $('apprResult').innerHTML = '<div class="loading">Сканируем allowance(...) по 7 сетям…</div>';
+    try {
+      const r = await fetch(`${API_BASE}/api/approvals?wallet=${addr}`);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+      lastApprovals = data.approvals || [];
+      renderApprovals();
+    } catch (e) {
+      $('apprResult').innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || e)}</div>`;
+    }
+  }
+
+  function renderApprovals() {
+    const root = $('apprResult');
+    if (!lastApprovals.length) {
+      root.innerHTML = '<div class="empty">Чисто! Нет активных approvals для известных контрактов.</div>';
+      return;
+    }
+    let html = `<div class="muted" style="font-size:11px;margin-bottom:10px;">
+      найдено ${lastApprovals.length} активных approvals · клик «Revoke» отзовёт разрешение через MetaMask
+    </div>`;
+    html += `
+      <table>
+        <thead><tr>
+          <th>Сеть</th><th>Токен</th><th>Кому</th>
+          <th class="num">Разрешено</th><th></th>
+        </tr></thead>
+        <tbody>`;
+    lastApprovals.forEach((a, i) => {
+      const tag = a.unlimited
+        ? '<span class="risk-tag r-yes">UNLIMITED</span>'
+        : '<span class="muted">' + escapeHtml(a.allowance_human) + '</span>';
+      html += `
+        <tr class="holding-row">
+          <td>${chainBadge(a.chain_key)}</td>
+          <td>
+            <div class="token-name">${escapeHtml(a.token_symbol)}</div>
+            <div class="token-sub mono">${escapeHtml(a.token_address.slice(0,8))}…${escapeHtml(a.token_address.slice(-6))}</div>
+          </td>
+          <td>
+            <div>${escapeHtml(a.spender_label)}</div>
+            <div class="token-sub mono">${escapeHtml(a.spender_address.slice(0,8))}…${escapeHtml(a.spender_address.slice(-6))}</div>
+          </td>
+          <td class="num">${tag}</td>
+          <td>
+            <button class="swap-btn" onclick="revokeApproval(${i})">Revoke</button>
+          </td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    root.innerHTML = html;
+  }
+
+  async function revokeApproval(idx) {
+    const a = lastApprovals[idx];
+    if (!a) return;
+    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!registryData) await loadRegistry();
+    const chain = registryData?.chains.find(c => c.key === a.chain_key);
+    if (!chain) return alert('Сеть не поддерживается');
+
+    const ok = confirm(
+      `Отозвать разрешение для ${a.token_symbol} → ${a.spender_label}?\n\n` +
+      `Будет одна транзакция: approve(spender, 0). Газ платишь ты.`
+    );
+    if (!ok) return;
+
+    showSwapModal([
+      `Переключиться на сеть «${chain.name}»`,
+      `Revoke approve → 0`,
+      `Дождаться подтверждения`,
+    ]);
+    let stepIdx = 0;
+    const next = (state, detail) => setSwapStep(stepIdx, state, detail);
+
+    try {
+      next('active');
+      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const wallet = accs[0];
+      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(cur, 16) !== chain.chain_id) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex(chain.chain_id) }],
+        });
+      }
+      next('done', `аккаунт <span class="mono">${wallet.slice(0,6)}…${wallet.slice(-4)}</span>`);
+      stepIdx++;
+
+      const tx = {
+        from: wallet,
+        to: a.token_address,
+        data: encodeApprove(a.spender_address, '0'),
+      };
+      const gas = await estimateGasCost(chain.key, tx);
+      next('active', gas.label || 'отправка approve(spender, 0)');
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [tx],
+      });
+      next('done', linkTx(chain, txHash));
+      stepIdx++;
+
+      next('active');
+      await waitForReceipt(txHash);
+      next('done', 'approve обнулён');
+      // Refresh the list after a short delay so the UI shows the change.
+      setTimeout(refreshApprovals, 2000);
+    } catch (e) {
+      console.error(e);
+      next('error', escapeHtml(e?.message || String(e)));
+    }
+  }
+  window.revokeApproval = revokeApproval;
+
+  $('apprRefresh').addEventListener('click', refreshApprovals);
+  document.querySelector('.tab[data-tab="approvals"]').addEventListener('click', () => {
+    if (!$('apprResult').dataset.loaded) {
+      $('apprResult').dataset.loaded = '1';
+      refreshApprovals();
+    }
+  });
+
+  // ============== Health Factor monitoring ==========================
+  // Watches Aave/Spark/Compound positions across all chains. Two thresholds:
+  //   * 1.5  → "warn" — yellow toast, browser notification (no sound)
+  //   * 1.1  → "danger" — red toast, browser notification + audio cue
+  // Per-chain throttle: one alert of each severity per 30 minutes.
+  const HF_WARN = 1.5;
+  const HF_DANGER = 1.1;
+  const HF_ALERT_THROTTLE_MS = 30 * 60 * 1000;
+  const HF_STORAGE_KEY = 'cryptoapp.hf_alerts';
+
+  function loadHfState() {
+    try { return JSON.parse(localStorage.getItem(HF_STORAGE_KEY) || '{}'); }
+    catch (_) { return {}; }
+  }
+  function saveHfState(s) {
+    try { localStorage.setItem(HF_STORAGE_KEY, JSON.stringify(s)); } catch (_) {}
+  }
+
+  // Lazy permission request — only when we have something to alert about.
+  async function ensureNotifPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied')  return false;
+    try {
+      const r = await Notification.requestPermission();
+      return r === 'granted';
+    } catch (_) { return false; }
+  }
+
+  function playAlertBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (_) { /* audio blocked — silent failure */ }
+  }
+
+  function showHfToast(severity, title, body) {
+    // Remove any existing toast first (we only show one at a time).
+    document.querySelectorAll('.hf-toast').forEach(n => n.remove());
+    const el = document.createElement('div');
+    el.className = `hf-toast${severity === 'warn' ? ' warn' : ''}`;
+    el.innerHTML = `
+      <div class="title">${escapeHtml(title)}</div>
+      <div class="body">${escapeHtml(body)}</div>`;
+    el.addEventListener('click', () => { setActiveTab('defi'); el.remove(); });
+    document.body.appendChild(el);
+    // Auto-dismiss in 30s.
+    setTimeout(() => { try { el.remove(); } catch (_) {} }, 30000);
+  }
+
+  function checkHealthFactors(scan) {
+    const positions = scan?.defi_positions || [];
+    // For each (chain, protocol) summary row that has a meaningful HF, check.
+    // A "summary" row's hf can be huge (no debt) — only alert when there's
+    // actual debt, i.e. hf < 100.
+    const state = loadHfState();
+    const now = Date.now();
+
+    // De-dup by (chain, protocol).
+    const seen = new Set();
+    for (const p of positions) {
+      if (!p.health_factor || p.health_factor <= 0) continue;
+      if (p.health_factor > 100) continue;     // sentinel "no debt"
+      const key = `${p.chain_key}|${p.protocol}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const hf = Number(p.health_factor);
+      let severity = null;
+      if (hf < HF_DANGER) severity = 'danger';
+      else if (hf < HF_WARN) severity = 'warn';
+      if (!severity) continue;
+
+      // Throttle: don't re-alert if we sent the same severity recently.
+      const stKey = `${key}|${severity}`;
+      const last = state[stKey] || 0;
+      if (now - last < HF_ALERT_THROTTLE_MS) continue;
+      state[stKey] = now;
+
+      const title = severity === 'danger'
+        ? `⛔ ${p.protocol} ${p.chain_name}: HF ${hf.toFixed(2)} — на грани ликвидации`
+        : `⚠ ${p.protocol} ${p.chain_name}: HF ${hf.toFixed(2)}`;
+      const body = severity === 'danger'
+        ? 'Срочно: пополни залог или закрой часть долга, иначе ликвидация.'
+        : 'HF просел ниже 1.5 — стоит присмотреть за позицией.';
+
+      showHfToast(severity, title, body);
+      if (severity === 'danger') playAlertBeep();
+      ensureNotifPermission().then(ok => {
+        if (!ok) return;
+        try {
+          new Notification(title, {
+            body, requireInteraction: severity === 'danger',
+            tag: stKey,  // browser dedupes notifications with same tag
+          });
+        } catch (_) {}
+      });
+    }
+    saveHfState(state);
+  }
+
+  // ============== Gas tracker ========================================
+  function fmtGwei(g) {
+    if (g >= 100) return g.toFixed(0) + ' gwei';
+    if (g >= 1)   return g.toFixed(1) + ' gwei';
+    if (g >= 0.01) return g.toFixed(3) + ' gwei';
+    return g.toExponential(1) + ' gwei';
+  }
+  async function refreshGasBar() {
+    try {
+      const r = await fetch(API_BASE + '/api/gas');
+      if (!r.ok) {
+        $('gasBar').innerHTML =
+          `<span class="gas-label">газ сейчас</span>
+           <span class="muted" style="font-size:11px;">бэкенд вернул ${r.status} — пересобери (./dev.sh)</span>`;
+        return;
+      }
+      const data = await r.json();
+      const bar = $('gasBar');
+      bar.innerHTML = '<span class="gas-label">газ сейчас</span>';
+      for (const c of (data.chains || [])) {
+        const meta = CHAIN_META[c.chain_key] || {};
+        const lvl  = c.error ? 'unknown' : (c.level || 'unknown');
+        const num  = c.error ? '—' : fmtGwei(c.gwei || 0);
+        const tip  = c.error ? c.error : `${c.chain_name} · уровень: ${lvl}`;
+        bar.insertAdjacentHTML('beforeend',
+          `<span class="gas-pill lvl-${lvl}" title="${escapeHtml(tip)}">
+             <span class="chain-icon">${meta.svg || ''}</span>
+             <span class="gas-num">${escapeHtml(num)}</span>
+           </span>`);
+      }
+    } catch (e) {
+      console.error('gas refresh failed', e);
+      $('gasBar').innerHTML =
+        `<span class="gas-label">газ сейчас</span>
+         <span class="muted" style="font-size:11px;">недоступно (${escapeHtml(e.message || e)})</span>`;
+    }
+  }
+  refreshGasBar();
+  setInterval(() => {
+    if (document.visibilityState === 'visible') refreshGasBar();
+  }, 20000);
+
+  // Try silent restore once the page is ready. If MetaMask is loaded as an
+  // injected provider it's already on `window.ethereum` synchronously by the
+  // time this script runs, so a small microtask delay is enough.
+  setTimeout(tryRestoreConnection, 0);
+</script>
+</body>
+</html>

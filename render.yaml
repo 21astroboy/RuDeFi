@@ -1,0 +1,17 @@
+# Render free-tier config (https://render.com).
+# Push this repo to GitHub, then on Render: New → Blueprint → connect repo.
+# Render reads this file and provisions the service automatically.
+services:
+  - type: web
+    name: defi-dashboard
+    runtime: docker
+    plan: free                  # 750 hours/mo free
+    region: frankfurt           # closest to RU users; switch to oregon/singapore if needed
+    branch: main
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: PORT
+        value: 10000            # Render's default; Dockerfile already binds $PORT
+      - key: CRYPTOAPP_LOG_LEVEL
+        value: info
+    autoDeploy: true            # rebuild on every git push

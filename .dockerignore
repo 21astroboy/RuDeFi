@@ -1,0 +1,9 @@
+build/
+.git/
+.DS_Store
+*.log
+node_modules/
+**/node_modules/
+README.md
+DEPLOY.md
+.gitignore

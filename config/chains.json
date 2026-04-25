@@ -1,0 +1,228 @@
+{
+  "_comment": "DeFi protocol addresses are intentionally per-chain — Aave V3 and Uniswap V3 share addresses on most EVM but differ on Base/BNB/Avalanche.",
+  "chains": [
+    {
+      "key": "ethereum",
+      "name": "Ethereum",
+      "chain_id": 1,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://eth.llamarpc.com",
+        "https://ethereum-rpc.publicnode.com",
+        "https://rpc.ankr.com/eth"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://etherscan.io",
+      "aave_v3_pool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+      "spark_pool": "0xC13e21B648A5Ee794902342038FF3aDAB66BE987",
+      "uniswap_v3_position_manager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+      "uniswap_v3_factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "compound_v3_markets": [
+        {"base_symbol": "USDC", "base_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "base_decimals": 6,  "comet": "0xc3d688B66703497DAA19211EEdff47f25384cdc3"},
+        {"base_symbol": "USDT", "base_address": "0xdAC17F958D2ee523a2206206994597C13D831ec7", "base_decimals": 6,  "comet": "0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840"},
+        {"base_symbol": "WETH", "base_address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "base_decimals": 18, "comet": "0xA17581A9E3356d9A858b789D68B4d866e593aE94"}
+      ]
+    },
+    {
+      "key": "arbitrum",
+      "name": "Arbitrum One",
+      "chain_id": 42161,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://arb1.arbitrum.io/rpc",
+        "https://arbitrum-one-rpc.publicnode.com",
+        "https://rpc.ankr.com/arbitrum"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://arbiscan.io",
+      "aave_v3_pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "uniswap_v3_position_manager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+      "uniswap_v3_factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "compound_v3_markets": [
+        {"base_symbol": "USDC",   "base_address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "base_decimals": 6,  "comet": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf"},
+        {"base_symbol": "USDC.e", "base_address": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", "base_decimals": 6,  "comet": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA"},
+        {"base_symbol": "USDT",   "base_address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", "base_decimals": 6,  "comet": "0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07"},
+        {"base_symbol": "WETH",   "base_address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", "base_decimals": 18, "comet": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486"}
+      ],
+      "native_usd_estimate": 3500
+    },
+    {
+      "key": "optimism",
+      "name": "Optimism",
+      "chain_id": 10,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://mainnet.optimism.io",
+        "https://optimism-rpc.publicnode.com",
+        "https://rpc.ankr.com/optimism"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://optimistic.etherscan.io",
+      "aave_v3_pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "uniswap_v3_position_manager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+      "uniswap_v3_factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "compound_v3_markets": [
+        {"base_symbol": "USDC", "base_address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", "base_decimals": 6,  "comet": "0x2e44e174f7D53F0212823acC11C01A11d58c5bCB"},
+        {"base_symbol": "USDT", "base_address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", "base_decimals": 6,  "comet": "0x995E394b8B2437aC8Ce61Ee0bC610D617962B214"},
+        {"base_symbol": "WETH", "base_address": "0x4200000000000000000000000000000000000006", "base_decimals": 18, "comet": "0xE36A30D249f7761327fd973001A32010b521b6Fd"}
+      ]
+    },
+    {
+      "key": "base",
+      "name": "Base",
+      "chain_id": 8453,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://mainnet.base.org",
+        "https://base-rpc.publicnode.com",
+        "https://base.llamarpc.com"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://basescan.org",
+      "aave_v3_pool": "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+      "uniswap_v3_position_manager": "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1",
+      "uniswap_v3_factory": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
+      "compound_v3_markets": [
+        {"base_symbol": "USDC",  "base_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "base_decimals": 6,  "comet": "0xb125E6687d4313864e53df431d5425969c15Eb2F"},
+        {"base_symbol": "USDbC", "base_address": "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", "base_decimals": 6,  "comet": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf"},
+        {"base_symbol": "WETH",  "base_address": "0x4200000000000000000000000000000000000006", "base_decimals": 18, "comet": "0x46e6b214b524310239732D51387075E0e70970bf"}
+      ],
+      "native_usd_estimate": 3500
+    },
+    {
+      "key": "polygon",
+      "name": "Polygon",
+      "chain_id": 137,
+      "native_symbol": "POL",
+      "native_decimals": 18,
+      "native_coingecko_id": "polygon-ecosystem-token",
+      "rpc_urls": [
+        "https://polygon-rpc.com",
+        "https://polygon-bor-rpc.publicnode.com",
+        "https://rpc.ankr.com/polygon"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://polygonscan.com",
+      "aave_v3_pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "uniswap_v3_position_manager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+      "uniswap_v3_factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "compound_v3_markets": [
+        {"base_symbol": "USDC", "base_address": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", "base_decimals": 6, "comet": "0xF25212E676D1F7F89Cd72fFEe66158f541246445"},
+        {"base_symbol": "USDT", "base_address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "base_decimals": 6, "comet": "0xaeB318360f27748Acb200CE616E389A6C9409a07"}
+      ],
+      "native_usd_estimate": 0.5
+    },
+    {
+      "key": "bnb",
+      "name": "BNB Smart Chain",
+      "chain_id": 56,
+      "native_symbol": "BNB",
+      "native_decimals": 18,
+      "native_coingecko_id": "binancecoin",
+      "rpc_urls": [
+        "https://bsc-dataseed.bnbchain.org",
+        "https://bsc-rpc.publicnode.com",
+        "https://rpc.ankr.com/bsc"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://bscscan.com",
+      "aave_v3_pool": "0x6807dc923806fE8Fd134338EABCA509979a7e0cB",
+      "uniswap_v3_position_manager": "0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613",
+      "uniswap_v3_factory": "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7"
+    },
+    {
+      "key": "avalanche",
+      "name": "Avalanche C-Chain",
+      "chain_id": 43114,
+      "native_symbol": "AVAX",
+      "native_decimals": 18,
+      "native_coingecko_id": "avalanche-2",
+      "rpc_urls": [
+        "https://api.avax.network/ext/bc/C/rpc",
+        "https://avalanche-c-chain-rpc.publicnode.com",
+        "https://rpc.ankr.com/avalanche"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://snowtrace.io",
+      "aave_v3_pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "uniswap_v3_position_manager": "0x655C406EBFa14EE2006250925e54ec43AD184f8B",
+      "uniswap_v3_factory": "0x740b1c1de25031C31FF4fC9A62f554A55cdC1baD"
+    },
+    {
+      "key": "gnosis",
+      "name": "Gnosis Chain",
+      "chain_id": 100,
+      "native_symbol": "xDAI",
+      "native_decimals": 18,
+      "native_coingecko_id": "xdai",
+      "rpc_urls": [
+        "https://rpc.gnosischain.com",
+        "https://gnosis-mainnet.public.blastapi.io",
+        "https://rpc.ankr.com/gnosis"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://gnosisscan.io",
+      "aave_v3_pool": "0xb50201558B00496A145fE76f7424749556E326D8",
+      "native_usd_estimate": 1
+    },
+    {
+      "key": "linea",
+      "name": "Linea",
+      "chain_id": 59144,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://rpc.linea.build",
+        "https://linea.blockpi.network/v1/rpc/public",
+        "https://1rpc.io/linea"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://lineascan.build",
+      "uniswap_v3_position_manager": "0x4615C383F85D0a2BbED973d83ccecf5CB7121463",
+      "uniswap_v3_factory": "0x31FAfd4889FA1269F7a13A66eE0fB458f27D72A9",
+      "native_usd_estimate": 3500
+    },
+    {
+      "key": "scroll",
+      "name": "Scroll",
+      "chain_id": 534352,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://rpc.scroll.io",
+        "https://scroll-mainnet.public.blastapi.io",
+        "https://rpc.ankr.com/scroll"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://scrollscan.com",
+      "aave_v3_pool": "0x11fCfe756c05AD438e312a7fd934381537D3cFfe",
+      "native_usd_estimate": 3500
+    },
+    {
+      "key": "blast",
+      "name": "Blast",
+      "chain_id": 81457,
+      "native_symbol": "ETH",
+      "native_decimals": 18,
+      "native_coingecko_id": "ethereum",
+      "rpc_urls": [
+        "https://rpc.blast.io",
+        "https://blast.blockpi.network/v1/rpc/public",
+        "https://blast.din.dev/rpc"
+      ],
+      "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "explorer": "https://blastscan.io",
+      "native_usd_estimate": 3500
+    }
+  ]
+}
