@@ -16,9 +16,9 @@ struct HttpResponse {
 };
 
 struct HttpClientOptions {
-    std::chrono::milliseconds timeout{std::chrono::milliseconds(4000)};
-    std::chrono::milliseconds connect_timeout{std::chrono::milliseconds(2000)};
-    int max_retries = 1;        // retry transient failures with backoff
+    std::chrono::milliseconds timeout{std::chrono::milliseconds(3000)};
+    std::chrono::milliseconds connect_timeout{std::chrono::milliseconds(1500)};
+    int max_retries = 0;        // no retries on cloud — fail fast, cache results
     bool follow_redirects = true;
     std::string user_agent = "cryptoapp/0.1 (+https://github.com/yourname/cryptoapp)";
 };

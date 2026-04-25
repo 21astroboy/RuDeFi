@@ -68,7 +68,7 @@ std::vector<GasInfo> GasTracker::snapshot() {
 
     std::vector<GasInfo> result;
     result.reserve(chains.size());
-    const auto deadline = now + std::chrono::seconds(6);
+    const auto deadline = now + std::chrono::seconds(4);
     for (std::size_t i = 0; i < futs.size(); ++i) {
         if (futs[i].wait_until(deadline) == std::future_status::ready) {
             result.push_back(futs[i].get());

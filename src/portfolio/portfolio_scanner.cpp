@@ -151,9 +151,9 @@ ScanResult PortfolioScanner::scan(const chain::Address& wallet, const ScanOption
                 return scan_chain(cfg, wallet, http_, scan_defi);
             }));
         }
-        // Per-chain hard ceiling: 12 seconds. If a chain's RPC is slow, we
+        // Per-chain hard ceiling: 8 seconds. If a chain's RPC is slow, we
         // skip it with a warning rather than blocking the whole scan.
-        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(12);
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8);
         for (std::size_t k = 0; k < futs.size(); ++k) {
             auto& f = futs[k];
             if (f.wait_until(deadline) != std::future_status::ready) {

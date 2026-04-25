@@ -40,7 +40,7 @@ struct ScanResult {
 
 struct ScanOptions {
     bool include_zero = false;     // skip dust/zero balances by default
-    int concurrency = 11;          // parallel chain scans (one per chain to avoid serialization)
+    int concurrency = 5;           // parallel chain scans (CPU-bound on shared free tiers)
     bool fetch_prices = true;
     bool scan_defi = true;         // scan Aave V3 + Uniswap V3 positions
 };

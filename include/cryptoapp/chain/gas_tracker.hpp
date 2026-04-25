@@ -27,7 +27,7 @@ class GasTracker {
 public:
     GasTracker(const Registry& registry,
                std::shared_ptr<util::HttpClient> http,
-               std::chrono::seconds cache_ttl = std::chrono::seconds(15));
+               std::chrono::seconds cache_ttl = std::chrono::seconds(45));
 
     [[nodiscard]] std::vector<GasInfo> snapshot();
 
