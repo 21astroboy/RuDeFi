@@ -53,7 +53,7 @@ ENV PORT=8787
 EXPOSE 8787
 
 # Bind 0.0.0.0 so the host can route external traffic in.
-CMD ["/bin/sh", "-c", "./cryptoapp serve --host 0.0.0.0 --port ${PORT}"]
+CMD ["/bin/sh", "-c", "./cryptoapp serve --bind 0.0.0.0 --port ${PORT}"]
 
 # Health check used by Render / Fly.io probes.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
