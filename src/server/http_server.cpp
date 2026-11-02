@@ -471,6 +471,11 @@ HttpServer::HttpServer(ServerDeps deps, ServeOptions opts)
         if (!srv.set_mount_point("/", impl_->opts.ui_dir.string())) {
             std::cerr << "warn: failed to mount UI dir " << impl_->opts.ui_dir << "\n";
         }
+        // Явные MIME-типы для PWA-ресурсов (httplib по умолчанию некоторые не знает).
+        srv.set_file_extension_and_mimetype_mapping("webmanifest", "application/manifest+json");
+        srv.set_file_extension_and_mimetype_mapping("svg",         "image/svg+xml");
+        srv.set_file_extension_and_mimetype_mapping("js",          "application/javascript");
+        srv.set_file_extension_and_mimetype_mapping("json",        "application/json");
     }
 
     srv.set_logger([](const httplib::Request& req, const httplib::Response& res) {

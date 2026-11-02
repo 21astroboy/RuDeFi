@@ -1,4 +1,17 @@
 build/
 .DS_Store
 *.log
+*.bak
 .env
+node_modules/
+
+# Приватные пользовательские настройки (с API-ключами) — никогда не коммитить
+config/settings.json
+
+# nginx-конфиг после подстановки домена
+nginx/conf.d/default.conf.disabled
+nginx/conf.d/_bootstrap.conf
+
+# certbot volume-копии если юзер неудачно примонтировал
+letsencrypt/
+certbot-www/

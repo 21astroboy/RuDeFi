@@ -2,8 +2,19 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>cryptoapp — портфель</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d13" />
+  <title>RuDeFi — DeFi dashboard</title>
+  <meta name="description" content="Мультичейн-портфель, DeFi-позиции, мосты, yield-сканер — на русском." />
+
+  <!-- PWA: установка на домой с мобилы -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RuDeFi" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <style>
     :root {
       --bg: #0a0d13;
@@ -708,6 +719,99 @@
     .footer-note .mono { color: var(--fg-soft); }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
+
+    /* ========================================================
+       Mobile responsive — срабатывает на телефонах (≤480px wide).
+       Основная цель: 1) ничего не выезжает за экран, 2) touch-targets
+       минимум 44x44, 3) многоколоночные grid'ы схлопываются в один
+       столбец, 4) горизонтальный скролл только там где он реально
+       нужен (gas-pills bar и широкие таблицы).
+       ======================================================== */
+    @media (max-width: 480px) {
+      .wrap { padding: 10px; }
+      .card { padding: 12px; border-radius: 12px; }
+      h1 { font-size: 20px; }
+      h2 { font-size: 16px; }
+
+      /* Шапка — вертикально, адресный инпут на всю ширину */
+      .row { flex-direction: column; align-items: stretch; gap: 8px; }
+      input.addr { flex: 1 1 100%; min-width: 0; width: 100%; font-size: 14px; }
+      .primary, button:not(.chain-pill):not(.seg-btn):not(.swap-btn):not(.max-btn) {
+        width: 100%;
+      }
+
+      /* Табы — tap target минимум 44px */
+      .tabs { gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+      .tab { padding: 12px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+      /* Gas pills — горизонтальный скролл вместо переноса */
+      .gas-bar { overflow-x: auto; -webkit-overflow-scrolling: touch;
+                 flex-wrap: nowrap; padding-right: 10px; }
+      .gas-pill { flex-shrink: 0; }
+
+      /* Totals — одна колонка */
+      .totals { grid-template-columns: 1fr; gap: 8px; }
+      .stat .value { font-size: 20px; }
+
+      /* DeFi строки — вертикальная раскладка */
+      .defi-row { grid-template-columns: 1fr; gap: 6px; }
+      .defi-row .value { text-align: left; }
+
+      /* Yield оптимизатор */
+      .opt-row { grid-template-columns: 1fr; gap: 8px; }
+      .opt-row .opt-gain { text-align: left; }
+
+      /* Bridges — route col тоже вертикально */
+      .bridge-route { grid-template-columns: 1fr; }
+      .bridge-route-cost { text-align: left; min-width: auto; }
+
+      /* Yield-фильтры — вертикально */
+      .yield-filters { flex-direction: column; align-items: stretch; }
+      .yield-filters > * { width: 100%; }
+      .yield-filters input[type=number] { width: 100%; margin-top: 4px; }
+
+      /* Приколоченные кнопки (toasts, modals) — внутри экрана */
+      .hf-toast {
+        left: 10px; right: 10px; bottom: 10px; max-width: calc(100% - 20px);
+      }
+      .modal { padding-bottom: 40px; }
+
+      /* Таблица холдингов — горизонтальный скролл сохраняем читаемость */
+      .holdings-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { font-size: 12px; }
+      table th, table td { padding: 6px 4px; }
+
+      /* Кнопки touch-friendly */
+      .swap-btn { padding: 10px 14px; font-size: 13px; }
+      .max-btn { padding: 6px 10px; }
+      .seg-btn { padding: 10px 14px; }
+      .chain-pill { padding: 8px 12px; font-size: 12px; }
+
+      /* Watchlist pills — поменьше (специфично для liq-таб, но public-app его не имеет) */
+
+      /* Hide scrollbars на WebKit для mobile */
+      .tabs::-webkit-scrollbar,
+      .gas-bar::-webkit-scrollbar,
+      .holdings-table::-webkit-scrollbar { height: 2px; }
+    }
+
+    /* ========================================================
+       Планшет (<=720px) — средняя ширина. Уже есть несколько медиа-квери
+       сверху — тут добавляем недостающие.
+       ======================================================== */
+    @media (max-width: 720px) {
+      .defi-row { grid-template-columns: 100px 100px 1fr; }
+      .opt-row { grid-template-columns: 1fr auto; }
+    }
+
+    /* ========================================================
+       PWA / standalone режим (когда «добавлено на домой» и запущено
+       как приложение). Прячем hint-строки адресной строки браузера.
+       ======================================================== */
+    @media (display-mode: standalone) {
+      .footer-note { display: none; }
+      body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    }
   </style>
 </head>
 <body>
@@ -3525,6 +3629,22 @@
   // injected provider it's already on `window.ethereum` synchronously by the
   // time this script runs, so a small microtask delay is enough.
   setTimeout(tryRestoreConnection, 0);
+
+  // ============== PWA service worker registration =====================
+  // Регистрируем SW только по HTTPS или localhost (Chrome/Safari блокируют
+  // SW на обычных http с foreign-origin). При ошибке — тихо игнорим,
+  // просто не будет оффлайн-кэша.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => {
+          console.log('[rudefi] service worker registered', reg.scope);
+          // Проверяем обновления раз в час — чтобы юзер не сидел на старом коде
+          setInterval(() => reg.update().catch(() => {}), 3600 * 1000);
+        })
+        .catch(err => console.warn('[rudefi] sw registration failed', err));
+    });
+  }
 </script>
 </body>
 </html>

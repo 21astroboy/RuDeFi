@@ -1,9 +1,21 @@
 build/
 .git/
+.gitignore
 .DS_Store
 *.log
+*.bak
 node_modules/
 **/node_modules/
+
+# Доки — не нужны в runtime-образе
 README.md
 DEPLOY.md
-.gitignore
+DEPLOY-VPS.md
+
+# nginx-конфиги монтируются в nginx-контейнер, не нужны в app-образе
+nginx/
+docker-compose.yml
+deploy.sh
+
+# Пользовательский settings, не должен попадать в билд
+config/settings.json
