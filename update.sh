@@ -52,14 +52,20 @@ say "rebuilding image"
 docker compose -f "$COMPOSE_FILE" up -d --build
 
 say "waiting for /api/healthz"
-HEALTH_PORT=$([ "$COMPOSE_FILE" = "docker-compose.standalone.yml" ] && echo 8080 || echo 443)
-for i in $(seq 1 20); do
-  if curl -sf "http://127.0.0.1:8080/api/healthz" >/dev/null 2>&1; then
-    ok "backend responding on 8080"
+HEALTHY=0
+for i in $(seq 1 30); do
+  if docker compose -f "$COMPOSE_FILE" exec -T app curl -fsS --max-time 5 \
+      "http://127.0.0.1:8787/api/healthz" >/dev/null 2>&1; then
+    HEALTHY=1
+    ok "backend responding on 8787 inside app container"
     break
   fi
   sleep 2
 done
+if [ "$HEALTHY" -ne 1 ]; then
+  docker compose -f "$COMPOSE_FILE" logs --tail=50 app
+  fatal "backend health check failed — update is not healthy"
+fi
 
 ok "update complete"
 echo

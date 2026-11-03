@@ -2401,11 +2401,13 @@
   // string in smallest units (e.g. "12345000" for decimals=6). No floats.
   function scaleAmount(human, decimals) {
     const s = String(human).trim();
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 77) return null;
     if (!/^\d+(\.\d+)?$/.test(s)) return null;
     let [intPart, fracPart = ''] = s.split('.');
+    if (fracPart.length > decimals && /[1-9]/.test(fracPart.slice(decimals))) return null;
     fracPart = (fracPart + '0'.repeat(decimals)).slice(0, decimals);
     const result = (intPart + fracPart).replace(/^0+/, '') || '0';
-    return result;
+    return BigInt(result) < (1n << 256n) ? result : null;
   }
 
   function secsToHuman(s) {
@@ -2440,7 +2442,7 @@
     const amountHuman = $('bridgeAmount').value.trim();
     const rawAmount = scaleAmount(amountHuman, fromDecimals);
     if (!rawAmount || rawAmount === '0') {
-      $('bridgeResult').innerHTML = '<div class="error">Введи положительную сумму.</div>';
+      $('bridgeResult').innerHTML = '<div class="error">Введи положительную сумму с допустимым числом знаков после запятой.</div>';
       return;
     }
 
@@ -2462,6 +2464,8 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
       if (data.error) throw new Error(data.error);
+      const context = Object.freeze({ fromChain, toChain, fromTokenAddr, rawAmount, wallet });
+      for (const route of data.routes || []) route.quoteContext = context;
       renderBridgeResults(data);
     } catch (e) {
       $('bridgeResult').innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || e)}</div>`;
@@ -2473,13 +2477,6 @@
   function renderBridgeResults(data) {
     const root = $('bridgeResult');
     bridgeRoutesByIdx = data.routes || [];
-    // Stash the raw integer amount on each route so executeSwap doesn't have
-    // to recompute it from the input (the user could have changed the input
-    // value between Quote and Swap).
-    const fromOpt = $('bridgeFromToken').options[$('bridgeFromToken').selectedIndex];
-    const fromDecimals = parseInt(fromOpt?.dataset.decimals || '18', 10);
-    const rawAmount = scaleAmount($('bridgeAmount').value.trim(), fromDecimals);
-    for (const r of bridgeRoutesByIdx) r.from_amount_raw_dec = rawAmount;
 
     if (!data.routes || !data.routes.length) {
       const fromKey = $('bridgeFromChain').value;
@@ -2636,16 +2633,15 @@
     if (!route) { alert('Маршрут не найден; перезапусти поиск'); return; }
     if (!getWallet()) { alert('MetaMask не установлен.'); return; }
 
-    // Steps to display in the modal.
-    const fromOpt = $('bridgeFromToken').options[$('bridgeFromToken').selectedIndex];
-    const fromTokenAddr = fromOpt?.value || '';
-    const fromIsNative  = isNativeAddr(fromTokenAddr) || fromOpt?.dataset.native === 'true';
-    const fromChainKey  = $('bridgeFromChain').value;
-    const fromChain     = registryData?.chains.find(c => c.key === fromChainKey);
-    if (!fromChain) { alert('Неизвестная исходная сеть'); return; }
-
-    const toChainKey = $('bridgeToChain').value;
-    const toChain    = registryData?.chains.find(c => c.key === toChainKey);
+    // Execute only the inputs captured when this quote was requested.
+    const context = route.quoteContext;
+    if (!context) { alert('Обнови котировку перед исполнением'); return; }
+    if ((route.steps || []).length !== 1) {
+      alert('Этот маршрут требует нескольких транзакций. Выбери маршрут с одним шагом.');
+      return;
+    }
+    const { fromChain, toChain, fromTokenAddr } = context;
+    const fromIsNative = isNativeAddr(fromTokenAddr);
     const isCrossChain = toChain && toChain.chain_id !== fromChain.chain_id;
 
     const stepsLabels = [];
@@ -2665,6 +2661,9 @@
       const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       if (!accs || !accs.length) throw new Error('Аккаунт не подключён');
       const wallet = accs[0];
+      if (wallet.toLowerCase() !== context.wallet.toLowerCase()) {
+        throw new Error('Котировка рассчитана для другого адреса. Подключи нужный кошелёк и обнови котировку.');
+      }
       const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== fromChain.chain_id) {
         try {
@@ -2695,7 +2694,7 @@
         const approveTx = {
           from: wallet,
           to: fromTokenAddr,
-          data: encodeApprove(approvalAddr, route.from_amount_raw_dec || await getRouteRawAmount(route)),
+          data: encodeApprove(approvalAddr, context.rawAmount),
         };
         const apprGas = await estimateGasCost(fromChain.key, approveTx);
         next('active', apprGas.label || 'отправка approve(...)');
@@ -2760,13 +2759,6 @@
     if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
     return j;
   }
-  async function getRouteRawAmount(route) {
-    // We have human amount + decimals from the form. Recompute raw integer.
-    const sel = $('bridgeFromToken');
-    const opt = sel.options[sel.selectedIndex];
-    const decimals = parseInt(opt?.dataset.decimals || '18', 10);
-    return scaleAmount($('bridgeAmount').value.trim(), decimals);
-  }
 
   function linkTx(chain, txHash) {
     if (!chain?.explorer || !txHash) return escapeHtml(txHash || '');
@@ -2775,18 +2767,19 @@
   async function waitForReceipt(txHash) {
     // Poll eth_getTransactionReceipt until we have one.
     for (let i = 0; i < 180; i++) {       // up to ~6 min
+      let receipt;
       try {
-        const r = await getWallet().request({
+        receipt = await getWallet().request({
           method: 'eth_getTransactionReceipt',
           params: [txHash],
         });
-        if (r) {
-          if (r.status && BigInt(r.status) === 0n) {
-            throw new Error('Транзакция реверснута на источнике');
-          }
-          return r;
+      } catch (e) { /* transient RPC failure; retry */ }
+      if (receipt) {
+        if (receipt.status != null && BigInt(receipt.status) === 0n) {
+          throw new Error('Транзакция отклонена сетью (reverted)');
         }
-      } catch (e) { /* swallow & retry */ }
+        return receipt;
+      }
       await new Promise(rs => setTimeout(rs, 2000));
     }
     throw new Error('Транзакция не подтверждена за 6 мин');

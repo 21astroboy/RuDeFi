@@ -2,7 +2,7 @@
 // Кэширует только статику (index.html, иконки, manifest).
 // Не кэширует /api/* — всегда свежие данные с бэкенда.
 
-const CACHE = 'rudefi-v1';
+const CACHE = 'rudefi-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k.startsWith('rudefi-') && k !== CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -30,24 +30,24 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API-запросы — всегда network, без кэша.
-  if (url.pathname.startsWith('/api/')) {
-    return;  // пропускаем, браузер сам сделает запрос
-  }
+  // Cache only this application's static GET resources. External APIs and
+  // wallet/RPC traffic must never enter the offline cache.
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin ||
+      !STATIC_ASSETS.includes(url.pathname)) return;
 
-  // Остальное — stale-while-revalidate.
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
-        .then((resp) => {
-          if (resp && resp.ok && event.request.method === 'GET') {
-            const copy = resp.clone();
-            caches.open(CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
-          }
-          return resp;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+  // Network first: a deployment is visible on the next navigation.
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        const cache = await caches.open(CACHE);
+        await cache.put(event.request, response.clone());
+      }
+      return response;
+    } catch (error) {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      throw error;
+    }
+  })());
 });
