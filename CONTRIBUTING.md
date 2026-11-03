@@ -25,8 +25,10 @@ For vulnerabilities, use [SECURITY.md](SECURITY.md) instead of publishing exploi
 4. Run the relevant checks from the repository root:
 
 ```bash
-node --test tests/*.cjs
-node --check ui/sw.js
+npm ci
+npm run lint
+npm test
+npm run format:check
 ```
 
 For C++ changes, configure and compile as well:

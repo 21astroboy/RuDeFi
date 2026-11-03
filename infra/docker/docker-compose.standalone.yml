@@ -1,0 +1,41 @@
+# Standalone вариант — только приложение, без своего nginx и certbot.
+# Используй когда на VPS уже есть другие приложения (твой nginx держит 80/443,
+# другие приложения на 3000 и т.д.). RuDeFi сядет на свободный порт 8080.
+#
+# После запуска:
+#   • Доступ напрямую: http://IP_СЕРВЕРА:8080
+#   • Или проксирь через свой nginx (см. nginx-snippet.conf)
+#
+# Запуск одной командой:
+#   docker compose -f docker-compose.standalone.yml up -d --build
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    container_name: rudefi
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    mem_limit: 768m
+    cpus: 1.5
+    pids_limit: 128
+    environment:
+      - PORT=8787
+    # Пробрасываем на хостовый порт 8080 (менять если занят).
+    ports:
+      - "127.0.0.1:8080:8787"   # bind только на localhost — безопасней, доступ через nginx
+      # Чтобы открыть напрямую с интернета, меняй на "8080:8787"
+    volumes:
+      # Монтируем config чтобы можно было подправить settings.json без ребилда
+      - ../../backend/config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8787/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

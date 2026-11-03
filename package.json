@@ -1,0 +1,21 @@
+{
+  "name": "rudefi",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "eslint frontend/app.js frontend/sw.js tests/frontend scripts/*.mjs && html-validate frontend/index.html frontend/about.html",
+    "test": "node --test tests/frontend/*.cjs",
+    "format:check": "prettier --check package.json eslint.config.mjs .github/workflows/*.yml",
+    "format": "prettier --write package.json eslint.config.mjs .github/workflows/*.yml"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "html-validate": "^11.18.0",
+    "prettier": "^3.9.10"
+  },
+  "overrides": {
+    "minimatch": "^11.0.4"
+  }
+}

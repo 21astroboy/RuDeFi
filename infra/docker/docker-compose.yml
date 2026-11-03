@@ -1,0 +1,84 @@
+# RuDeFi — production стек для VPS.
+#
+# Три сервиса:
+#   1. app      — C++ бэкенд cryptoapp на 8787 (внутри сети, наружу не выставлен)
+#   2. nginx    — reverse proxy с HTTPS, выставлен на 80/443
+#   3. certbot  — автоматическое получение/обновление Let's Encrypt сертификатов
+#
+# Запуск:
+#   DOMAIN=rudefi.example.com EMAIL=you@example.com docker compose up -d
+#
+# См. DEPLOY-VPS.md для полной инструкции.
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    container_name: rudefi-app
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    mem_limit: 768m
+    cpus: 1.5
+    pids_limit: 128
+    environment:
+      - PORT=8787
+    # Порт наружу НЕ пробрасываем — nginx проксирует внутри docker-сети.
+    expose:
+      - "8787"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8787/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - rudefi
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: rudefi-nginx
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot-www:/var/www/certbot:ro
+      - certbot-conf:/etc/letsencrypt:ro
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    networks:
+      - rudefi
+
+  # One-off helper, НЕ стартует с `docker compose up` — только по явному
+  # `docker compose run --rm certbot ...` (см. deploy.sh и крон для renew).
+  # profiles: [tools] гарантирует что обычный `up` его не трогает.
+  certbot:
+    image: certbot/certbot:latest
+    container_name: rudefi-certbot
+    profiles: ["tools"]
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-conf:/etc/letsencrypt
+    entrypoint: ""
+
+volumes:
+  certbot-www:
+  certbot-conf:
+
+networks:
+  rudefi:
+    driver: bridge

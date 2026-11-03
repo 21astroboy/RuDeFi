@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="ui/icon.svg" width="80" height="80" alt="RuDeFi logo" />
+<img src="frontend/icon.svg" width="80" height="80" alt="RuDeFi logo" />
 
 # RuDeFi
 
@@ -78,7 +78,7 @@ Executing a swap, bridge, or revocation requires a connected wallet and sufficie
 
 **Ethereum · Arbitrum · Optimism · Base · Polygon · BNB Chain · Avalanche · Gnosis · Linea · Scroll · Blast**
 
-Network and token coverage is defined in [`config/chains.json`](config/chains.json) and [`config/tokens.json`](config/tokens.json). The scanner uses configured token and protocol lists; it is not an exhaustive index of every asset or position on an address.
+Network and token coverage is defined in [`backend/config/chains.json`](backend/config/chains.json) and [`backend/config/tokens.json`](backend/config/tokens.json). The scanner uses configured token and protocol lists; it is not an exhaustive index of every asset or position on an address.
 
 ## How it works
 
@@ -106,6 +106,20 @@ flowchart LR
 - Risk checks depend on upstream coverage. An empty result or a positive indicator is not a guarantee.
 - Quotes, fees, balances, APYs, and exchange rates are estimates or snapshots and can change.
 - This is an experimental application for real wallet interactions. Review transaction details before signing; there is no end-to-end guarantee from the automated tests.
+
+## Repository layout
+
+```text
+backend/       C++ application, public headers, chain and token configuration
+frontend/      Interface, application JavaScript, PWA, Russian overview page
+infra/         Docker and nginx configuration
+scripts/       Development, release, and repository checks
+tests/         Frontend regression tests
+docs/          Screenshots, architecture, and operator notes
+.github/       CI/CD workflows and contribution templates
+```
+
+[Russian overview for non-programmers](https://2-27-41-60.sslip.io/about.html) · [Operations and protection](docs/operations/README.md)
 
 ## Local development
 
@@ -139,15 +153,17 @@ cmake --build build --parallel 2
 ./build/cryptoapp serve --bind 127.0.0.1 --port 8787
 ```
 
-Open [localhost:8787](http://127.0.0.1:8787). Run the binary from the repository root so it can find `config/` and `ui/`. The internal executable name is still `cryptoapp`.
+Open [localhost:8787](http://127.0.0.1:8787). Run the binary from the repository root so it can find `backend/config/` and `frontend/`. The internal executable name is still `cryptoapp`.
 
 CMake downloads its declared header dependencies on first configuration. No wallet or API key is required to start the application.
 
 Run the regression checks from the repository root:
 
 ```bash
-node --test tests/*.cjs
-node --check ui/sw.js
+npm ci
+npm run lint
+npm test
+npm run format:check
 ```
 
 These checks simulate wallet providers and API responses. They do not send transactions or replace testing with a real wallet on desktop and mobile.

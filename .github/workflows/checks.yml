@@ -1,36 +1,59 @@
 name: Checks
-
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   frontend:
-    name: Frontend regression checks
-    runs-on: ubuntu-latest
+    name: Lint and frontend regression checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: node --test tests/*.cjs
-      - run: node --check ui/sw.js
-
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: node scripts/check-layout.mjs
+      - run: npm audit --audit-level=moderate
   backend:
-    name: C++ build
+    name: C++ build and static analysis
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Install build dependencies
+      - name: Install build and lint dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ git libcurl4-openssl-dev libboost-dev
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: cmake --build build --parallel 2
+          sudo apt-get install -y cmake g++ git libcurl4-openssl-dev libboost-dev cppcheck shellcheck
+      - run: shellcheck scripts/*.sh update.sh
+      - run: cppcheck --enable=warning,performance,portability --error-exitcode=1 --suppress=missingIncludeSystem --inline-suppr -Ibackend/include backend/src backend/apps
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel 2
+  container:
+    name: Container and nginx configuration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f infra/docker/docker-compose.yml config --quiet
+      - run: docker build -f infra/docker/Dockerfile -t rudefi:test .
+      - name: Smoke test
+        run: |
+          docker run -d --name rudefi-smoke -p 127.0.0.1:8787:8787 rudefi:test
+          curl --fail --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8787/api/healthz
+          curl --fail http://127.0.0.1:8787/about.html > /dev/null
+          curl --fail http://127.0.0.1:8787/app.js > /dev/null
+      - name: Logs
+        if: failure()
+        run: docker logs rudefi-smoke

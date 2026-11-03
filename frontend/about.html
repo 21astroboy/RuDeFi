@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="RuDeFi для P2P: портфель в 11 сетях, проверка адресов, свапы, мосты, история и управление разрешениями. Понятное описание без технических терминов.">
+  <title>RuDeFi — инструменты для тех, кто работает с криптовалютой</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#141c30; --line:#293550; --text:#edf2ff; --muted:#afbdd5; --blue:#8bb8ff; }
+    * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; background:var(--bg); color:var(--text); font:17px/1.7 system-ui,-apple-system,sans-serif; }
+    a { color:var(--blue); text-underline-offset:4px; } .wrap { width:min(1120px,100% - 40px); margin:auto; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:26px 0; border-bottom:1px solid var(--line); } .brand { display:flex; align-items:center; gap:12px; color:var(--text); text-decoration:none; font-size:24px; font-weight:750; } .brand img { width:38px; height:38px; }
+    nav { display:flex; gap:24px; flex-wrap:wrap; font-size:14px; } nav a { text-decoration:none; }
+    .hero { padding:90px 0 55px; max-width:900px; } .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:700; } h1 { font-size:clamp(35px,6vw,66px); line-height:1.12; letter-spacing:-.045em; margin:18px 0 25px; } .lead { font-size:22px; max-width:760px; color:var(--muted); } .actions { display:flex; gap:14px; flex-wrap:wrap; margin:32px 0 20px; } .button { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:12px 22px; border-radius:12px; background:#89b2ff; color:#0b1530; text-decoration:none; font-weight:700; } .button.secondary { background:var(--panel); color:var(--text); border:1px solid var(--line); }
+    .note { color:var(--muted); font-size:14px; } section { padding:45px 0; } h2 { font-size:32px; line-height:1.25; letter-spacing:-.025em; margin:0 0 20px; } h3 { font-size:21px; line-height:1.35; margin:0 0 12px; } .intro { color:var(--muted); max-width:790px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:30px; } .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:28px; } .card p { color:var(--muted); margin:0 0 15px; } .card p:last-child { margin-bottom:0; } .tag { color:var(--blue); font-size:12px; letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:18px; }
+    .scenario { margin-top:35px; padding:30px; border-left:3px solid var(--blue); background:linear-gradient(90deg,#1a2947,transparent); border-radius:0 16px 16px 0; } .scenario p { margin:8px 0 0; color:var(--muted); }
+    .preview { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:18px; margin-top:25px; } .steps { counter-reset:step; list-style:none; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; } .steps li { padding:25px; background:var(--panel); border-radius:18px; } .steps li::before { counter-increment:step; content:'0' counter(step); display:block; color:var(--blue); font-size:24px; font-weight:700; margin-bottom:12px; }
+    .networks { display:flex; flex-wrap:wrap; gap:9px; padding:0; list-style:none; } .networks li { padding:7px 13px; border:1px solid var(--line); border-radius:30px; font-size:14px; }
+    details { border-top:1px solid var(--line); padding:20px 0; } summary { cursor:pointer; font-size:18px; font-weight:600; } details p { color:var(--muted); max-width:850px; } .boundary { border:1px solid #6b5835; border-radius:18px; padding:25px; color:#e0d5be; margin:25px 0; } footer { padding:35px 0 50px; color:var(--muted); border-top:1px solid var(--line); font-size:14px; }
+    @media(max-width:700px) { .wrap { width:calc(100% - 28px); } header { align-items:flex-start; } nav { gap:12px; justify-content:flex-end; } .hero { padding-top:50px; } .lead { font-size:19px; } .grid,.steps { grid-template-columns:1fr; } .card { padding:23px; } section { padding:32px 0; } h2 { font-size:28px; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="/"><img src="/icon.svg" alt="">RuDeFi</a>
+      <nav aria-label="Навигация"><a href="#features">Возможности</a><a href="#start">Как начать</a><a href="#questions">Вопросы</a></nav>
+    </header>
+    <main>
+      <div class="hero">
+        <span class="eyebrow">Для P2P-пользователей и владельцев криптовалюты</span>
+        <h1>Твои кошельки.<br>Твои сети.<br>Всё перед глазами.</h1>
+        <p class="lead">RuDeFi помогает разобраться, где лежат твои активы, проверить адрес контрагента, обменять токены и найти перевод между сетями — в одном приложении на русском.</p>
+        <div class="actions"><a class="button" href="/">Открыть RuDeFi</a><a class="button secondary" href="#features">Посмотреть возможности</a></div>
+        <p class="note">Без регистрации в RuDeFi. Подпись операций — в твоём MetaMask. Исходный код открыт.</p>
+      </div>
+      <section id="features">
+        <h2>Меньше вкладок. Больше ясности.</h2>
+        <p class="intro">Когда работаешь с несколькими адресами и сетями, легко потерять время на поиск баланса, нужного обозревателя или маршрута перевода. Здесь собраны инструменты для этой части P2P-работы.</p>
+        <div class="grid">
+          <article class="card"><span class="tag">01 / Обзор активов</span><h3>Портфель в 11 сетях</h3><p>Посмотри балансы монет и поддерживаемых токенов по одному адресу. Общая оценка показывается в долларах и рублях — не нужно складывать суммы из разных обозревателей.</p><p>Можно просто вставить адрес. Подключать кошелёк для просмотра не обязательно. Редкие токены, которых нет в списке приложения, могут не попасть в результат.</p></article>
+          <article class="card"><span class="tag">02 / Организация</span><h3>Адресная книга и выгрузка</h3><p>Дай адресам понятные названия: «Для сделок», «Холодный», «DeFi». Переключайся между ними и выгружай текущие активы в CSV для своей таблицы.</p><p>Метки сохраняются в этом браузере. CSV — снимок портфеля, а не банковская выписка или готовый налоговый отчёт.</p></article>
+          <article class="card"><span class="tag">03 / До взаимодействия</span><h3>Проверка адреса контрагента</h3><p>Кнопка «AML» помогает посмотреть доступные сигналы GoPlus: например, связь адреса с фишингом, санкционными списками или другими отмеченными рисками.</p><p>Это дополнительная информация для решения. Отсутствие предупреждений не доказывает чистоту средств и не подтверждает личность человека или получение фиатного платежа.</p></article>
+          <article class="card"><span class="tag">04 / Обмен внутри сети</span><h3>Свапы</h3><p>Нужно обменять ETH на USDC или другой поддерживаемый токен? Выбери одну сеть, пару токенов и сумму. RuDeFi запросит маршруты LI.FI и покажет ожидаемый результат, газ и время.</p><p>Перед исполнением проверь условия и подтверди запрос в MetaMask. Вводить API-ключ для обмена не нужно.</p></article>
+          <article class="card"><span class="tag">05 / Перевод между сетями</span><h3>Мосты</h3><p>Выбери исходную и целевую сеть, токены и сумму. Сравни варианты по ожидаемой сумме получения, комиссиям и длительности.</p><p>Сейчас в приложении исполняются маршруты с одним шагом LI.FI. Многошаговые варианты могут показываться, но их кнопка исполнения отключена. У мостов есть риски задержек и изменения условий.</p></article>
+          <article class="card"><span class="tag">06 / Контроль доступа</span><h3>Разрешения токенов</h3><p>При работе с обменниками ты разрешаешь контрактам расходовать токены. Раздел Approvals показывает найденные разрешения для известных контрактов и позволяет отправить их отзыв через MetaMask.</p><p>Проверка охватывает настроенные токены и контракты, а не все разрешения кошелька. Отзыв — отдельная операция, за которую оплачивается газ.</p></article>
+          <article class="card"><span class="tag">07 / Учёт операций</span><h3>История транзакций</h3><p>Посмотри последние 50 обычных операций, переводов ERC-20 или внутренних транзакций в выбранной сети. Можно перейти к операции в обозревателе.</p><p>Для истории внутри RuDeFi нужен ключ Etherscan V2; доступность сетей зависит от его тарифа. Для просмотра истории через ссылку на обозреватель ключ приложения не нужен.</p></article>
+          <article class="card"><span class="tag">08 / Если используешь DeFi</span><h3>Позиции и поиск доходности</h3><p>Смотри поддерживаемые позиции Aave V3, Spark, Compound V3 и Uniswap V3. В разделе «Заработок» можно искать пулы по данным DeFiLlama и фильтровать их по токенам, сетям, объёму и доходности.</p><p>Показанный APY — меняющаяся оценка, не обещание прибыли. Доступность позиций и действий зависит от сети и протокола. Для поддерживаемых позиций есть предупреждения о снижении показателя здоровья, пока приложение открыто.</p></article>
+        </div>
+        <div class="scenario"><h3>Пример из повседневной работы</h3><p>Ты получил USDC в Arbitrum, а следующая операция нужна в другой сети. Сначала проверяешь баланс, затем открываешь «Мосты», сравниваешь маршруты и подписываешь выбранную операцию в MetaMask. После этого смотришь статус и историю — без регистрации в отдельном аккаунте RuDeFi.</p></div>
+      </section>
+      <section>
+        <h2>Так выглядит приложение</h2>
+        <p class="intro">Реальный интерфейс RuDeFi. Свапы и мосты вынесены в отдельные разделы, чтобы не путать обмен внутри сети с переводом между сетями.</p>
+        <img class="preview" src="/assets/interface.png" width="1280" height="818" alt="Интерфейс RuDeFi: отдельные вкладки Свапы и Мосты, выбор сети, токенов и суммы" loading="lazy">
+      </section>
+      <section id="start">
+        <h2>Начать можно с одного адреса</h2>
+        <ol class="steps"><li><h3>Открой портфель</h3>Вставь адрес и нажми «Сканировать». Это режим просмотра, без доступа к средствам.</li><li><h3>Подключи MetaMask</h3>На компьютере — расширение. На телефоне — «Открыть сайт в MetaMask», затем подключение во встроенном браузере.</li><li><h3>Выбери действие</h3>Проверь адрес, найди свап или мост, посмотри разрешения. Перед подписью сверь сумму, сеть и запрос кошелька.</li></ol>
+        <p class="note">Для котировки нужен корректный ненулевой адрес. Для исполнения — подключённый кошелёк, сумма операции и нативная монета сети для газа.</p>
+      </section>
+      <section>
+        <h2>Сети, которые уже есть в RuDeFi</h2>
+        <ul class="networks"><li>Ethereum</li><li>Arbitrum</li><li>Optimism</li><li>Base</li><li>Polygon</li><li>BNB Chain</li><li>Avalanche</li><li>Gnosis</li><li>Linea</li><li>Scroll</li><li>Blast</li></ul>
+        <p class="note">Набор токенов, протоколов и маршрутов различается между сетями.</p>
+      </section>
+      <section id="questions">
+        <h2>Что важно знать</h2>
+        <details open><summary>Это P2P-биржа?</summary><p>Нет. RuDeFi помогает с ончейн-частью работы: кошельками, токенами, сетями и проверками. Здесь нет объявлений, подбора покупателя или продавца, эскроу, банковских переводов, проверки платежей и арбитража споров.</p></details>
+        <details><summary>Кто хранит мои деньги?</summary><p>RuDeFi не просит seed-фразу или приватный ключ и не хранит их. Ты подписываешь операции в MetaMask. При этом свап, мост или разрешение могут взаимодействовать с внешними контрактами — проверяй запрос кошелька перед подтверждением.</p></details>
+        <details><summary>Нужно ли платить или подключать API-ключи?</summary><p>Для портфеля, проверок, поиска доходности, свапов и мостов пользовательский API-ключ не требуется. Ключ Etherscan нужен только для истории внутри приложения. Действия в блокчейне требуют оплаты газа; у обмена и моста могут быть дополнительные комиссии. Внешние сервисы ограничивают количество запросов.</p></details>
+        <details><summary>Работает ли на телефоне?</summary><p>Да, интерфейс адаптирован для телефона. Для подписи открой RuDeFi во встроенном браузере MetaMask. На главной странице есть ссылка такого перехода. В обычном Safari или Chrome можно просматривать адреса; сам переход в MetaMask не подключает кошелёк обратно к Safari.</p></details>
+        <details><summary>Где остаются мои данные?</summary><p>Метки адресов и настройки сохраняются в браузере. Но для получения баланса или проверки адрес передаётся соответствующему RPC или сервису данных. Ключ истории отправляется в Etherscan. Приложение не делает работу с публичным блокчейном анонимной.</p></details>
+        <details><summary>Можно ли доверять результатам проверки и цифрам?</summary><p>Это информация из внешних источников, а не гарантия. Проверка может не знать о новом риске, список активов может быть неполным, а сумма получения, газ и доходность — измениться. Фиатный платёж проверяй отдельно по своему банковскому счёту.</p></details>
+        <div class="boundary">RuDeFi развивается как открытое приложение. Автоматические тесты не заменяют проверку реальных операций и не являются аудитом безопасности. Используй данные для собственного решения и внимательно проверяй каждую подпись.</div>
+      </section>
+      <section><h2>Попробуй с просмотра портфеля</h2><p class="intro">Вставь адрес, который хочешь посмотреть. Для этого не нужны регистрация, API-ключ или подключение кошелька.</p><div class="actions"><a class="button" href="/">Перейти в приложение</a><a class="button secondary" href="https://github.com/21astroboy/RuDeFi" target="_blank" rel="noopener">Открытый код на GitHub</a></div></section>
+    </main>
+    <footer>RuDeFi · Независимый открытый проект. Данные предоставляют внешние сервисы, в том числе LI.FI, GoPlus, CoinGecko, DeFiLlama и Etherscan. Powered by Etherscan.io APIs.</footer>
+  </div>
+</body>
+</html>
