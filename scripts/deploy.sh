@@ -21,8 +21,7 @@ fi
 echo "==> Деплой RuDeFi на $DOMAIN"
 
 # 1. Подставляем домен в nginx-конфиг.
-sed -i.bak "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" infra/nginx/conf.d/default.conf
-rm -f infra/nginx/conf.d/default.conf.bak
+bash scripts/render-nginx.sh
 
 # 2. Собираем образ приложения.
 echo "==> docker compose -f infra/docker/docker-compose.yml build + up (app)"

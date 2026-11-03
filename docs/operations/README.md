@@ -15,7 +15,7 @@ Environment `production` использует `DEPLOY_HOST`, `DEPLOY_SSH_KEY`, `
 
 Сервер выполняет `scripts/update.sh`: fast-forward, сборка, перезапуск, проверка настоящего backend health endpoint, проверка и reload nginx. Корневой `update.sh` оставлен для совместимости со старыми командами.
 
-Основной Compose: `infra/docker/docker-compose.yml`. Вариант за существующим reverse proxy: `infra/docker/docker-compose.standalone.yml`. Dockerfile: `infra/docker/Dockerfile`. Домен и сертификат в nginx должны соответствовать установке; локальная конфигурация сохраняется при обновлении.
+Основной Compose: `infra/docker/docker-compose.yml`. Вариант за существующим reverse proxy: `infra/docker/docker-compose.standalone.yml`. Dockerfile: `infra/docker/Dockerfile`. Домен задаётся через `DOMAIN` и сохраняется в локальном `.rudefi-domain`. `scripts/render-nginx.sh` формирует игнорируемый git файл `infra/nginx/conf.d/default.conf` из шаблона. Сертификат должен соответствовать домену; повторные обновления не конфликтуют с локальной подстановкой домена.
 
 ## Защита от перегрузки
 

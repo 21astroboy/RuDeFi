@@ -49,6 +49,10 @@ fi
 
 ok "updated $CURRENT → $NEW"
 
+if [ "$COMPOSE_FILE" = "infra/docker/docker-compose.yml" ]; then
+  bash scripts/render-nginx.sh
+fi
+
 say "rebuilding image"
 docker compose -f "$COMPOSE_FILE" up -d --build
 

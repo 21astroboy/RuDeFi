@@ -17,3 +17,6 @@ letsencrypt/
 certbot-www/
 
 .rudefi-deployed
+
+infra/nginx/conf.d/*.conf
+.rudefi-domain
