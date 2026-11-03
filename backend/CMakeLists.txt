@@ -31,9 +31,8 @@ set(FETCHCONTENT_QUIET FALSE)
 # nlohmann/json (header-only)
 FetchContent_Declare(
     nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.3
-    GIT_SHALLOW TRUE
+    URL https://codeload.github.com/nlohmann/json/tar.gz/refs/tags/v3.11.3
+    URL_HASH SHA256=0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
