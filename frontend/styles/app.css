@@ -216,3 +216,8 @@ td { padding: 15px 14px; font-size: 12px; }
 @media (max-width: 480px) {
   .tabs .tab { width: auto !important; }
 }
+/* Wide data tables scroll inside their cards instead of widening the page. */
+#result, #yieldResult, #txResult, #apprResult { overflow-x: auto; min-width: 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+@media (max-width: 720px) {
+  #result table { min-width: 660px; }
+}
