@@ -2493,7 +2493,11 @@
       return;
     }
 
-    const wallet = $('addrInput').value.trim() || '0x0000000000000000000000000000000000000000';
+    const wallet = $('addrInput').value.trim();
+    if (!/^0x[0-9a-f]{40}$/i.test(wallet) || /^0x0{40}$/i.test(wallet)) {
+      $('bridgeResult').innerHTML = '<div class="error">Подключи MetaMask или введи адрес кошелька для расчёта маршрута.</div>';
+      return;
+    }
 
     const url = new URL('/api/bridge/quote', API_BASE);
     url.searchParams.set('from_chain', fromChain.chain_id);
