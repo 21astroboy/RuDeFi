@@ -721,6 +721,190 @@
     a:hover { text-decoration: underline; }
 
     /* ========================================================
+       Address book — сохранённые кошельки с метками. P2P-мэнам полезно
+       переключаться между депозитным / торговым / холодным одним кликом.
+       ======================================================== */
+    .wallet-book {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: wrap; margin-top: 10px;
+    }
+    .wallet-book .book-label {
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin-right: 2px;
+    }
+    .wallet-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 10px 5px 8px;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px; color: var(--fg-soft);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      max-width: 220px;
+    }
+    .wallet-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .wallet-chip.active {
+      background: linear-gradient(135deg, rgba(110,168,254,0.18), rgba(130,71,229,0.14));
+      border-color: var(--accent);
+      color: var(--fg);
+    }
+    .wallet-chip .chip-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex: 0 0 auto;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+    }
+    .wallet-chip .chip-label {
+      font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wallet-chip .chip-addr {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px; color: var(--muted);
+    }
+    .wallet-chip .chip-menu {
+      opacity: 0; margin-left: 2px;
+      background: transparent; border: none; padding: 0 2px;
+      color: var(--muted); font-size: 14px; cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .wallet-chip:hover .chip-menu { opacity: 1; }
+    .wallet-chip-add {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 999px;
+      font-size: 12px; color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .wallet-chip-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Color-picker modal для редактирования метки */
+    .label-modal-backdrop {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.6);
+      display: grid; place-items: center;
+      padding: 16px;
+    }
+    .label-modal {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .label-modal h3 { margin: 0 0 12px; font-size: 15px; }
+    .label-modal .addr-preview {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px; color: var(--muted);
+      margin-bottom: 14px; word-break: break-all;
+    }
+    .label-modal input[type=text] {
+      width: 100%;
+      background: var(--panel-3); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 10px 12px; font: inherit; font-size: 13px;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+    }
+    .label-modal input[type=text]:focus { outline: none; border-color: var(--accent); }
+    .label-modal .color-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+      margin-bottom: 16px;
+    }
+    .label-modal .color-swatch {
+      width: 36px; height: 36px; border-radius: 50%;
+      cursor: pointer; border: 2px solid transparent;
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .label-modal .color-swatch:hover { transform: scale(1.1); }
+    .label-modal .color-swatch.selected { border-color: var(--fg); transform: scale(1.1); }
+    .label-modal .modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .label-modal .modal-actions .danger {
+      margin-right: auto;
+      background: transparent; border-color: transparent;
+      color: #ff6b6b;
+    }
+    .label-modal .modal-actions .danger:hover { border-color: #ff6b6b; }
+
+    /* ========================================================
+       Транзакции — список tx с направлением (in/out), токеном и ссылкой
+       на эксплорер. Компактный «email-like» вид.
+       ======================================================== */
+    .tx-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto 100px;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-soft);
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+    .tx-row:last-child { border-bottom: none; }
+    .tx-row:hover { background: rgba(255,255,255,0.025); }
+    .tx-dir {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      font-size: 14px; font-weight: 600;
+      flex: 0 0 auto;
+    }
+    .tx-dir.in  { background: rgba(109,223,142,0.18); color: #6ddf8e; }
+    .tx-dir.out { background: rgba(255,107,107,0.18); color: #ff6b6b; }
+    .tx-dir.self { background: rgba(136,136,136,0.18); color: #aaa; }
+    .tx-main .tx-title {
+      font-weight: 500; font-size: 13px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .tx-main .tx-sub {
+      font-size: 11px; color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .tx-amount {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      min-width: 90px;
+    }
+    .tx-amount.in  { color: #6ddf8e; }
+    .tx-amount.out { color: #ff6b6b; }
+    .tx-time {
+      text-align: right;
+      font-size: 11px; color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-badge {
+      display: inline-block;
+      padding: 1px 6px; border-radius: 4px;
+      font-size: 10px; color: var(--muted);
+      border: 1px solid var(--border);
+      margin-left: 6px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .tx-badge.err { color: #ff6b6b; border-color: rgba(255,107,107,0.5); }
+    @media (max-width: 480px) {
+      .tx-row { grid-template-columns: 24px 1fr auto; gap: 8px; padding: 10px 10px; }
+      .tx-time { display: none; }
+      .tx-dir { width: 24px; height: 24px; font-size: 12px; }
+    }
+
+    /* CSV export кнопка — в правом верхнем углу карточки холдингов */
+    .holdings-tools {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px 0;
+      justify-content: flex-end;
+    }
+    .holdings-tools button {
+      padding: 6px 12px; font-size: 12px;
+    }
+
+    /* ========================================================
        Mobile responsive — срабатывает на телефонах (≤480px wide).
        Основная цель: 1) ничего не выезжает за экран, 2) touch-targets
        минимум 44x44, 3) многоколоночные grid'ы схлопываются в один
@@ -839,6 +1023,7 @@
       <label class="toggle"><input type="checkbox" id="includeZero" /> показать нулевые</label>
       <span id="lastUpdated" class="pill" style="display:none;"></span>
     </div>
+    <div id="walletBook" class="wallet-book"></div>
   </div>
 
   <div id="totals" class="totals" style="display:none;">
@@ -866,6 +1051,7 @@
     <button class="tab" data-tab="bridge">Обмен</button>
     <button class="tab" data-tab="yield">Заработок</button>
     <button class="tab" data-tab="approvals">Approvals</button>
+    <button class="tab" data-tab="txs">Транзакции</button>
   </nav>
 
   <section class="tab-pane" data-pane="holdings">
@@ -995,6 +1181,45 @@
     </div>
     <div id="apprResult" class="card">
       <div class="empty">Нажми «Обновить» чтобы просканировать.</div>
+    </div>
+  </section>
+
+  <section class="tab-pane" data-pane="txs" hidden>
+    <div class="card">
+      <div class="defi-header">
+        <h2>История транзакций</h2>
+        <span class="muted defi-sub">последние 50 операций по текущему кошельку · данные Etherscan V2</span>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <select id="txChain" class="addr" style="flex:0 0 160px;">
+          <option value="1">Ethereum</option>
+          <option value="42161">Arbitrum</option>
+          <option value="10">Optimism</option>
+          <option value="8453">Base</option>
+          <option value="137">Polygon</option>
+          <option value="56">BNB</option>
+          <option value="43114">Avalanche</option>
+          <option value="100">Gnosis</option>
+          <option value="59144">Linea</option>
+          <option value="534352">Scroll</option>
+          <option value="81457">Blast</option>
+        </select>
+        <select id="txKind" class="addr" style="flex:0 0 160px;">
+          <option value="txlist">Обычные (ETH)</option>
+          <option value="tokentx">ERC-20 токены</option>
+          <option value="txlistinternal">Внутренние</option>
+        </select>
+        <button id="txRefresh" class="primary" type="button">Загрузить</button>
+        <span class="grow"></span>
+        <button id="txApiKeyBtn" type="button" title="Задать Etherscan API-key">⚙ Ключ</button>
+      </div>
+    </div>
+    <div id="txResult" class="card">
+      <div class="empty">
+        Нужен бесплатный ключ Etherscan — зарегай за 1 мин
+        на <a href="https://etherscan.io/apis" target="_blank" rel="noopener">etherscan.io/apis</a>
+        и жми ⚙ Ключ. Одного ключа хватает на все 11 сетей (Etherscan V2 Universal API).
+      </div>
     </div>
   </section>
 
@@ -1183,6 +1408,177 @@
       img.addEventListener('error', tryNext);
       tryNext();
     });
+  }
+
+  // ---- Address book: saved wallets with labels and colors ----
+  // Хранилище: { "0xaddr...": { label: "Депозитный", color: "#ff6b6b", addedAt: 1234 } }
+  const BOOK_KEY = 'cryptoapp.wallet_book';
+  const BOOK_COLORS = [
+    '#ff6b6b', // red       — для депозитного / горячего
+    '#ffa94d', // orange    — трейдинг
+    '#ffd93d', // yellow    — промежуточный
+    '#6ddf8e', // green     — холодный / сбережения
+    '#6ea8fe', // blue      — основной
+    '#8d6cff', // purple    — DeFi
+    '#51cf66', // mint      — зарплата
+    '#f783ac', // pink      — личный
+    '#4dabf7', // sky
+    '#868e96', // gray      — архив
+    '#20c997', // teal
+    '#be4bdb', // violet
+  ];
+
+  function loadWalletBook() {
+    try {
+      const raw = localStorage.getItem(BOOK_KEY);
+      if (!raw) return {};
+      const data = JSON.parse(raw);
+      return (data && typeof data === 'object') ? data : {};
+    } catch (_) { return {}; }
+  }
+  function saveWalletBook(book) {
+    try { localStorage.setItem(BOOK_KEY, JSON.stringify(book)); } catch (_) {}
+  }
+  function normAddr(a) { return (a || '').toLowerCase().trim(); }
+  function shortAddr(a) { return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : ''; }
+
+  function getWalletMeta(addr) {
+    if (!addr) return null;
+    const book = loadWalletBook();
+    return book[normAddr(addr)] || null;
+  }
+
+  function renderWalletBook() {
+    const slot = document.getElementById('walletBook');
+    if (!slot) return;
+    const book = loadWalletBook();
+    const entries = Object.entries(book).sort((a, b) => (a[1].addedAt || 0) - (b[1].addedAt || 0));
+    const curAddr = normAddr(document.getElementById('addrInput').value);
+
+    let html = '';
+    if (entries.length) {
+      html += '<span class="book-label">мои кошельки:</span>';
+    }
+    for (const [addr, meta] of entries) {
+      const isActive = addr === curAddr;
+      const safeLabel = escapeHtml(meta.label || 'Без имени');
+      const safeColor = /^#[0-9a-fA-F]{6}$/.test(meta.color || '') ? meta.color : BOOK_COLORS[0];
+      html += `
+        <span class="wallet-chip ${isActive ? 'active' : ''}" data-addr="${addr}" title="${escapeHtml(addr)}">
+          <span class="chip-dot" style="background:${safeColor}"></span>
+          <span class="chip-label">${safeLabel}</span>
+          <span class="chip-addr">${shortAddr(addr)}</span>
+          <button class="chip-menu" data-edit="${addr}" title="Редактировать">✎</button>
+        </span>`;
+    }
+    html += '<button class="wallet-chip-add" id="walletBookAdd">+ сохранить текущий</button>';
+    slot.innerHTML = html;
+
+    // Click chip body = switch wallet
+    slot.querySelectorAll('.wallet-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        if (e.target.closest('[data-edit]')) return; // handled below
+        const a = chip.dataset.addr;
+        if (!a) return;
+        document.getElementById('addrInput').value = a;
+        saveConnection(a);
+        renderWalletBook(); // re-highlight
+        doScan();
+      });
+    });
+    // Edit (✎) button on chip
+    slot.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openLabelModal(btn.dataset.edit);
+      });
+    });
+    // Add current wallet
+    const addBtn = document.getElementById('walletBookAdd');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const addr = normAddr(document.getElementById('addrInput').value);
+        if (!/^0x[0-9a-f]{40}$/.test(addr)) {
+          alert('Сначала вставь валидный 0x-адрес в поле выше.');
+          return;
+        }
+        openLabelModal(addr);
+      });
+    }
+  }
+
+  function openLabelModal(addr) {
+    const a = normAddr(addr);
+    if (!/^0x[0-9a-f]{40}$/.test(a)) return;
+    const book = loadWalletBook();
+    const existing = book[a] || null;
+    const curLabel = existing ? existing.label : '';
+    const curColor = existing ? existing.color : BOOK_COLORS[0];
+    const isNew = !existing;
+
+    // Build modal
+    const backdrop = document.createElement('div');
+    backdrop.className = 'label-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="label-modal" role="dialog">
+        <h3>${isNew ? 'Сохранить кошелёк' : 'Редактировать метку'}</h3>
+        <div class="addr-preview">${escapeHtml(a)}</div>
+        <input type="text" id="lmLabel" placeholder="Напр. «Депозитный», «Торговый»" maxlength="40" value="${escapeHtml(curLabel)}" />
+        <div class="color-grid" id="lmColors"></div>
+        <div class="modal-actions">
+          ${isNew ? '' : '<button type="button" class="danger" id="lmDelete">Удалить</button>'}
+          <button type="button" id="lmCancel">Отмена</button>
+          <button type="button" class="primary" id="lmSave">${isNew ? 'Сохранить' : 'Применить'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    let selectedColor = curColor;
+    const colorGrid = backdrop.querySelector('#lmColors');
+    for (const c of BOOK_COLORS) {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (c === selectedColor ? ' selected' : '');
+      sw.style.background = c;
+      sw.addEventListener('click', () => {
+        selectedColor = c;
+        colorGrid.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+      });
+      colorGrid.appendChild(sw);
+    }
+    const labelInput = backdrop.querySelector('#lmLabel');
+    setTimeout(() => labelInput.focus(), 50);
+
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#lmCancel').addEventListener('click', close);
+
+    const save = () => {
+      const label = labelInput.value.trim() || `Кошелёк ${Object.keys(book).length + 1}`;
+      const b = loadWalletBook();
+      b[a] = {
+        label,
+        color: selectedColor,
+        addedAt: (b[a] && b[a].addedAt) || Date.now(),
+      };
+      saveWalletBook(b);
+      close();
+      renderWalletBook();
+    };
+    backdrop.querySelector('#lmSave').addEventListener('click', save);
+    labelInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+
+    const delBtn = backdrop.querySelector('#lmDelete');
+    if (delBtn) {
+      delBtn.addEventListener('click', () => {
+        if (!confirm(`Удалить метку «${existing.label}» из адресной книги?`)) return;
+        const b = loadWalletBook();
+        delete b[a];
+        saveWalletBook(b);
+        close();
+        renderWalletBook();
+      });
+    }
   }
 
   // ---- MetaMask connection persistence (30-min rolling TTL) ----
@@ -1406,6 +1802,9 @@
       html += '</ul>';
     }
     html += `
+      <div class="holdings-tools">
+        <button type="button" id="csvExportBtn" title="Экспортировать текущий портфель в CSV (для бухгалтерии / Excel)">⬇ CSV</button>
+      </div>
       <table>
         <thead><tr>
           <th style="padding-left:14px;">Сеть</th>
@@ -1445,7 +1844,73 @@
     html += '</tbody></table>';
     root.innerHTML = html;
     attachIconFallbacks(root);
+    const csvBtn = document.getElementById('csvExportBtn');
+    if (csvBtn) csvBtn.addEventListener('click', () => exportHoldingsCsv(data));
   }
+
+  // ---- CSV export ----
+  // Выгружает текущий портфель как CSV в кодировке UTF-8 с BOM (чтобы Excel
+  // понимал кириллицу без танцев). Разделитель — точка с запятой: в русской
+  // локали Excel split по «;», а это самое частое использование у P2P-мэнов.
+  function csvEscape(v) {
+    if (v == null) return '';
+    const s = String(v);
+    if (/[";\n\r]/.test(s)) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+  function exportHoldingsCsv(data) {
+    const addr = (document.getElementById('addrInput').value || '').trim();
+    const meta = getWalletMeta(addr);
+    const label = meta ? meta.label : '';
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const sep = ';';
+    const header = ['Сеть', 'Актив', 'Native', 'Адрес токена', 'Количество', 'Цена USD', 'Стоимость USD', 'Стоимость RUB', 'Кошелёк', 'Метка', 'Время'];
+    const rows = [header.map(csvEscape).join(sep)];
+    const rubRate = Number(data.usd_rub_rate || 0);
+    for (const h of (data.holdings || [])) {
+      const chainName = (CHAIN_META[h.chain_key] || {}).label || h.chain_key;
+      rows.push([
+        chainName,
+        h.symbol || '',
+        h.is_native ? '1' : '',
+        h.token_address || h.address || '',
+        // Числа — с точкой; при импорте в русский Excel может потребоваться
+        // Data → Text to Columns, но это норма для CSV с separator=;.
+        (Number(h.amount) || 0).toFixed(8).replace(/\.?0+$/, ''),
+        h.price_usd ? Number(h.price_usd).toFixed(6).replace(/\.?0+$/, '') : '',
+        h.value_usd ? Number(h.value_usd).toFixed(2) : '',
+        h.value_rub ? Number(h.value_rub).toFixed(2) : '',
+        addr,
+        label,
+        ts,
+      ].map(csvEscape).join(sep));
+    }
+    // Итоговая строка
+    rows.push('');
+    rows.push([
+      '', 'ИТОГО', '', '', '', '',
+      Number(data.total_usd || 0).toFixed(2),
+      Number(data.total_rub || 0).toFixed(2),
+      '', '', '',
+    ].map(csvEscape).join(sep));
+    if (rubRate) {
+      rows.push(['', `курс ЦБ РФ 1$=${rubRate.toFixed(2)}₽`].map(csvEscape).join(sep));
+    }
+
+    const csv = '\ufeff' + rows.join('\r\n');  // UTF-8 BOM для Excel
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeLabel = (label || 'portfolio').replace(/[^\wа-яА-Я-]+/g, '_').slice(0, 32);
+    a.href = url;
+    a.download = `rudefi_${safeLabel}_${ts}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+
   function renderDefi(data) {
     const body = $('defiBody');
     const sub  = $('defiSubtitle');
@@ -3474,6 +3939,254 @@
     }
   });
 
+  // ============== Transaction history (Etherscan V2 Universal API) ========
+  // One API key covers all 11 EVM chains. Free tier: 5 req/sec, 100k calls/day
+  // — overkill for personal use. Key lives in localStorage, never touches the
+  // server (so a public deploy doesn't leak keys).
+  const TX_KEY = 'cryptoapp.etherscan_key';
+  const TX_V2_URL = 'https://api.etherscan.io/v2/api';
+  const TX_CHAIN_NAMES = {
+    '1': 'ethereum', '42161': 'arbitrum', '10': 'optimism', '8453': 'base',
+    '137': 'polygon', '56': 'bnb', '43114': 'avalanche', '100': 'gnosis',
+    '59144': 'linea', '534352': 'scroll', '81457': 'blast',
+  };
+  const TX_EXPLORERS = {
+    '1': 'https://etherscan.io',
+    '42161': 'https://arbiscan.io',
+    '10': 'https://optimistic.etherscan.io',
+    '8453': 'https://basescan.org',
+    '137': 'https://polygonscan.com',
+    '56': 'https://bscscan.com',
+    '43114': 'https://snowscan.xyz',
+    '100': 'https://gnosisscan.io',
+    '59144': 'https://lineascan.build',
+    '534352': 'https://scrollscan.com',
+    '81457': 'https://blastscan.io',
+  };
+  // Native symbol per chain, for txlist / internal (where value is in wei of native).
+  const TX_NATIVE_SYMBOLS = {
+    '1': 'ETH', '42161': 'ETH', '10': 'ETH', '8453': 'ETH',
+    '137': 'POL', '56': 'BNB', '43114': 'AVAX', '100': 'xDAI',
+    '59144': 'ETH', '534352': 'ETH', '81457': 'ETH',
+  };
+
+  function getEtherscanKey() {
+    try { return localStorage.getItem(TX_KEY) || ''; } catch (_) { return ''; }
+  }
+  function setEtherscanKey(k) {
+    try {
+      if (k) localStorage.setItem(TX_KEY, k);
+      else localStorage.removeItem(TX_KEY);
+    } catch (_) {}
+  }
+
+  function openApiKeyModal() {
+    const cur = getEtherscanKey();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'label-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="label-modal" role="dialog">
+        <h3>Etherscan API-key</h3>
+        <div class="addr-preview">
+          Один ключ работает для всех 11 сетей через Etherscan V2 Universal API.<br>
+          Получить бесплатно: <a href="https://etherscan.io/apis" target="_blank" rel="noopener">etherscan.io/apis</a>
+          — regular account → API Keys → Add. Хранится только в твоём браузере, на сервер не шлётся.
+        </div>
+        <input type="text" id="akInput" placeholder="например ABC123DEF456..." value="${escapeHtml(cur)}" />
+        <div class="modal-actions">
+          ${cur ? '<button type="button" class="danger" id="akClear">Удалить</button>' : ''}
+          <button type="button" id="akCancel">Отмена</button>
+          <button type="button" class="primary" id="akSave">Сохранить</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#akCancel').addEventListener('click', close);
+    const input = backdrop.querySelector('#akInput');
+    setTimeout(() => input.focus(), 50);
+    const save = () => {
+      setEtherscanKey(input.value.trim());
+      close();
+      refreshTxs();
+    };
+    backdrop.querySelector('#akSave').addEventListener('click', save);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+    const clearBtn = backdrop.querySelector('#akClear');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      setEtherscanKey('');
+      close();
+      $('txResult').innerHTML = '<div class="empty">Ключ удалён. Нажми ⚙ Ключ чтобы задать новый.</div>';
+    });
+  }
+
+  async function fetchTxs(chainId, kind, wallet, apiKey) {
+    const u = new URL(TX_V2_URL);
+    u.searchParams.set('chainid', chainId);
+    u.searchParams.set('module', 'account');
+    u.searchParams.set('action', kind);              // txlist | tokentx | txlistinternal
+    u.searchParams.set('address', wallet);
+    u.searchParams.set('page', '1');
+    u.searchParams.set('offset', '50');
+    u.searchParams.set('sort', 'desc');
+    u.searchParams.set('apikey', apiKey);
+    const r = await fetch(u.toString());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    // Etherscan returns status="0" when there are no results — that's fine.
+    if (j.status !== '1' && !Array.isArray(j.result)) {
+      // Common cases: "No transactions found" (empty), "Invalid API Key"
+      if (typeof j.message === 'string' && /no transactions found/i.test(j.message)) return [];
+      throw new Error(j.message || j.result || 'etherscan error');
+    }
+    return Array.isArray(j.result) ? j.result : [];
+  }
+
+  function relTime(unixSec) {
+    const diff = Math.floor(Date.now() / 1000 - unixSec);
+    if (diff < 60)    return diff + ' сек';
+    if (diff < 3600)  return Math.floor(diff / 60) + ' мин';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ч';
+    if (diff < 86400 * 30) return Math.floor(diff / 86400) + ' дн';
+    return new Date(unixSec * 1000).toISOString().slice(0, 10);
+  }
+
+  function formatNativeFromWei(valueWei, nativeSymbol) {
+    try {
+      const bi = BigInt(valueWei || '0');
+      const whole = Number(bi / 10n ** 18n);
+      const frac = Number(bi % 10n ** 18n) / 1e18;
+      const total = whole + frac;
+      if (total === 0) return '0 ' + nativeSymbol;
+      const digits = total < 0.0001 ? 8 : total < 1 ? 6 : 4;
+      return total.toFixed(digits).replace(/\.?0+$/, '') + ' ' + nativeSymbol;
+    } catch (_) { return (valueWei || '0') + ' wei'; }
+  }
+  function formatTokenAmount(valueRaw, decimals) {
+    try {
+      const d = Number(decimals || 18);
+      const bi = BigInt(valueRaw || '0');
+      const divisor = 10n ** BigInt(d);
+      const whole = Number(bi / divisor);
+      const frac = Number(bi % divisor) / Number(divisor);
+      const total = whole + frac;
+      if (total === 0) return '0';
+      const digits = total < 0.0001 ? 8 : total < 1 ? 6 : 4;
+      return total.toFixed(digits).replace(/\.?0+$/, '');
+    } catch (_) { return valueRaw || '0'; }
+  }
+
+  function renderTxs(items, chainId, kind, wallet) {
+    const root = $('txResult');
+    if (!items.length) {
+      root.innerHTML = '<div class="empty">Нет транзакций в этой сети по данному адресу.</div>';
+      return;
+    }
+    const walletLower = wallet.toLowerCase();
+    const explorer = TX_EXPLORERS[chainId] || 'https://etherscan.io';
+    const native = TX_NATIVE_SYMBOLS[chainId] || 'ETH';
+    let html = '';
+    for (const t of items) {
+      const from = (t.from || '').toLowerCase();
+      const to = (t.to || '').toLowerCase();
+      const isIn = to === walletLower && from !== walletLower;
+      const isOut = from === walletLower && to !== walletLower;
+      const isSelf = from === walletLower && to === walletLower;
+      const dirCls = isIn ? 'in' : isOut ? 'out' : 'self';
+      const dirIcon = isIn ? '↓' : isOut ? '↑' : '↔';
+
+      let title, amount, amountCls;
+      if (kind === 'tokentx') {
+        const sym = t.tokenSymbol || '?';
+        const amt = formatTokenAmount(t.value, t.tokenDecimal);
+        title = `${isIn ? 'Получено' : isOut ? 'Отправлено' : 'Перевод'} ${escapeHtml(sym)}`;
+        amount = (isIn ? '+' : isOut ? '−' : '±') + amt + ' ' + escapeHtml(sym);
+        amountCls = dirCls;
+      } else if (kind === 'txlistinternal') {
+        const amt = formatNativeFromWei(t.value, native);
+        title = `Внутренняя операция · ${escapeHtml(t.type || 'call')}`;
+        amount = (isIn ? '+' : isOut ? '−' : '±') + amt;
+        amountCls = dirCls;
+      } else {
+        // txlist (normal)
+        const amt = formatNativeFromWei(t.value, native);
+        const isContract = t.input && t.input !== '0x';
+        title = isContract ? 'Контракт · ' + (t.functionName || t.methodId || '').split('(')[0] || 'метод' : (isIn ? 'Получено' : isOut ? 'Отправлено' : 'Перевод');
+        title = String(title).slice(0, 60);
+        amount = (isIn ? '+' : isOut ? '−' : '±') + amt;
+        amountCls = dirCls;
+      }
+
+      const err = (t.isError === '1' || t.txreceipt_status === '0')
+        ? '<span class="tx-badge err">failed</span>' : '';
+      const counterparty = isIn ? t.from : t.to;
+      const cpShort = counterparty ? (counterparty.slice(0, 8) + '…' + counterparty.slice(-6)) : '';
+
+      html += `
+        <div class="tx-row" data-hash="${escapeHtml(t.hash)}" data-explorer="${explorer}">
+          <div class="tx-dir ${dirCls}">${dirIcon}</div>
+          <div class="tx-main">
+            <div class="tx-title">${escapeHtml(title)}${err}</div>
+            <div class="tx-sub">${isIn ? 'от' : 'к'} ${escapeHtml(cpShort)}</div>
+          </div>
+          <div class="tx-amount ${amountCls}">${escapeHtml(amount)}</div>
+          <div class="tx-time">${relTime(Number(t.timeStamp))}</div>
+        </div>`;
+    }
+    root.innerHTML = html;
+    // Click row → open explorer with the tx hash.
+    root.querySelectorAll('.tx-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const h = row.dataset.hash;
+        const exp = row.dataset.explorer;
+        if (h && exp) window.open(exp + '/tx/' + h, '_blank', 'noopener');
+      });
+    });
+  }
+
+  async function refreshTxs() {
+    const root = $('txResult');
+    const wallet = ($('addrInput').value || '').trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
+      root.innerHTML = '<div class="empty">Сначала введи 0x-адрес в поле выше или подключи MetaMask.</div>';
+      return;
+    }
+    const key = getEtherscanKey();
+    if (!key) {
+      root.innerHTML = `
+        <div class="empty">
+          Нужен бесплатный ключ Etherscan — зарегай за 1 мин на
+          <a href="https://etherscan.io/apis" target="_blank" rel="noopener">etherscan.io/apis</a>
+          и жми ⚙ Ключ.
+        </div>`;
+      return;
+    }
+    const chainId = $('txChain').value;
+    const kind = $('txKind').value;
+    root.innerHTML = '<div class="empty">Загрузка…</div>';
+    try {
+      const items = await fetchTxs(chainId, kind, wallet, key);
+      renderTxs(items, chainId, kind, wallet);
+    } catch (e) {
+      root.innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || String(e))}</div>`;
+    }
+  }
+
+  $('txRefresh').addEventListener('click', refreshTxs);
+  $('txApiKeyBtn').addEventListener('click', openApiKeyModal);
+  $('txChain').addEventListener('change', () => {
+    if ($('txResult').dataset.loaded) refreshTxs();
+  });
+  $('txKind').addEventListener('change', () => {
+    if ($('txResult').dataset.loaded) refreshTxs();
+  });
+  document.querySelector('.tab[data-tab="txs"]').addEventListener('click', () => {
+    if (!$('txResult').dataset.loaded) {
+      $('txResult').dataset.loaded = '1';
+      refreshTxs();
+    }
+  });
+
   // ============== Health Factor monitoring ==========================
   // Watches Aave/Spark/Compound positions across all chains. Two thresholds:
   //   * 1.5  → "warn" — yellow toast, browser notification (no sound)
@@ -3629,6 +4342,13 @@
   // injected provider it's already on `window.ethereum` synchronously by the
   // time this script runs, so a small microtask delay is enough.
   setTimeout(tryRestoreConnection, 0);
+
+  // Address book — рендерим при старте и обновляем highlight при любой смене адреса
+  renderWalletBook();
+  document.getElementById('addrInput').addEventListener('input', () => {
+    // live-подсветка активного чипа по мере ввода
+    renderWalletBook();
+  });
 
   // ============== PWA service worker registration =====================
   // Регистрируем SW только по HTTPS или localhost (Chrome/Safari блокируют

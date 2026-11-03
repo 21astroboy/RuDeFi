@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Inter,sans-serif">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#131824"/><stop offset="1" stop-color="#0f131c"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6ea8fe"/><stop offset="1" stop-color="#8247e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="820" fill="#0a0d13"/>
+
+  <!-- Header -->
+  <rect x="24" y="20" width="30" height="30" rx="9" fill="url(#brand)"/>
+  <circle cx="39" cy="35" r="4" fill="#fff"/>
+  <text x="64" y="40" font-size="19" font-weight="600" fill="#e6ecff">RuDeFi</text>
+  <text x="139" y="40" font-size="14" fill="#8691aa">— портфель по всем сетям</text>
+
+  <!-- Tabs -->
+  <g transform="translate(24, 72)" font-size="13">
+    <text x="0" y="23" fill="#8691aa">Активы</text>
+    <text x="80" y="23" fill="#8691aa">DeFi позиции</text>
+    <text x="195" y="23" fill="#8691aa">Обмен</text>
+    <text x="270" y="23" fill="#8691aa">Заработок</text>
+    <text x="360" y="23" fill="#8691aa">Approvals</text>
+    <rect x="450" y="0" width="130" height="36" rx="9" fill="#1a2131" stroke="#6ea8fe"/>
+    <text x="515" y="23" text-anchor="middle" fill="#e6ecff" font-weight="500">Транзакции</text>
+  </g>
+
+  <!-- Filters -->
+  <rect x="24" y="122" width="1152" height="106" rx="12" fill="url(#panel)" stroke="#232b3d"/>
+  <text x="48" y="156" font-size="18" font-weight="600" fill="#e6ecff">История транзакций</text>
+  <text x="258" y="156" font-size="12" fill="#8691aa">последние 50 операций по текущему кошельку · данные Etherscan V2</text>
+
+  <g transform="translate(48, 180)">
+    <rect width="180" height="34" rx="9" fill="#1a2131" stroke="#232b3d"/>
+    <circle cx="22" cy="17" r="8" fill="#28a0f0"/>
+    <text x="38" y="22" font-size="13" fill="#e6ecff">Arbitrum</text>
+    <text x="162" y="22" font-size="10" fill="#8691aa">▼</text>
+
+    <rect x="196" width="180" height="34" rx="9" fill="#1a2131" stroke="#232b3d"/>
+    <text x="212" y="22" font-size="13" fill="#e6ecff">ERC-20 токены</text>
+    <text x="358" y="22" font-size="10" fill="#8691aa">▼</text>
+
+    <rect x="392" width="140" height="34" rx="9" fill="url(#brand)"/>
+    <text x="462" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#0a0d13">Загрузить</text>
+
+    <rect x="958" width="110" height="34" rx="9" fill="#1a2131" stroke="#232b3d"/>
+    <text x="1013" y="22" text-anchor="middle" font-size="12" fill="#e6ecff">⚙ Ключ</text>
+  </g>
+
+  <!-- TX list -->
+  <rect x="24" y="248" width="1152" height="548" rx="12" fill="url(#panel)" stroke="#232b3d"/>
+
+  <!-- Row 1: incoming USDC -->
+  <g transform="translate(48, 288)">
+    <circle cx="14" cy="14" r="14" fill="rgba(109,223,142,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#6ddf8e">↓</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Получено USDC</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">от 0x7a3b5c8f…c21a9d</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#6ddf8e">+ 1 500.00 USDC</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">12 мин</text>
+  </g>
+
+  <line x1="40" y1="340" x2="1152" y2="340" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 2: outgoing ETH (contract) -->
+  <g transform="translate(48, 368)">
+    <circle cx="14" cy="14" r="14" fill="rgba(255,107,107,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#ff6b6b">↑</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Контракт · swap</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">к 0x1111111254eeb25…80cb</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#ff6b6b">− 0.5 ETH</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">1 ч</text>
+  </g>
+
+  <line x1="40" y1="420" x2="1152" y2="420" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 3: outgoing failed -->
+  <g transform="translate(48, 448)">
+    <circle cx="14" cy="14" r="14" fill="rgba(255,107,107,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#ff6b6b">↑</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Контракт · deposit</text>
+    <rect x="190" y="2" width="46" height="14" rx="4" fill="transparent" stroke="rgba(255,107,107,0.5)"/>
+    <text x="213" y="12" text-anchor="middle" font-size="9" fill="#ff6b6b" letter-spacing="0.4">FAILED</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">к 0x794a6…3d8b</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#ff6b6b">− 0.0012 ETH</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">2 ч</text>
+  </g>
+
+  <line x1="40" y1="500" x2="1152" y2="500" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 4: incoming -->
+  <g transform="translate(48, 528)">
+    <circle cx="14" cy="14" r="14" fill="rgba(109,223,142,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#6ddf8e">↓</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Получено WETH</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">от 0x82aD2f…a1E2 (Across Bridge)</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#6ddf8e">+ 1.4587 WETH</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">4 ч</text>
+  </g>
+
+  <line x1="40" y1="580" x2="1152" y2="580" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 5: outgoing -->
+  <g transform="translate(48, 608)">
+    <circle cx="14" cy="14" r="14" fill="rgba(255,107,107,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#ff6b6b">↑</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Отправлено USDT</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">к 0xdC2b8f…a10E</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#ff6b6b">− 2 000.00 USDT</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">8 ч</text>
+  </g>
+
+  <line x1="40" y1="660" x2="1152" y2="660" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 6: incoming -->
+  <g transform="translate(48, 688)">
+    <circle cx="14" cy="14" r="14" fill="rgba(109,223,142,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#6ddf8e">↓</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Получено ARB</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">от 0x3f21ab…8f21 (Arbitrum Foundation)</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#6ddf8e">+ 450.00 ARB</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">1 дн</text>
+  </g>
+
+  <line x1="40" y1="740" x2="1152" y2="740" stroke="#232b3d" stroke-opacity="0.5"/>
+
+  <!-- Row 7: outgoing -->
+  <g transform="translate(48, 768)">
+    <circle cx="14" cy="14" r="14" fill="rgba(255,107,107,0.18)"/>
+    <text x="14" y="20" text-anchor="middle" font-size="14" font-weight="600" fill="#ff6b6b">↑</text>
+    <text x="44" y="12" font-size="13" fill="#e6ecff" font-weight="500">Контракт · supply</text>
+    <text x="44" y="27" font-size="11" fill="#8691aa" font-family="ui-monospace,Menlo,monospace">к 0x794a6…3d8b (Aave V3 Pool)</text>
+    <text x="980" y="18" text-anchor="end" font-size="13" fill="#ff6b6b">− 5 000.00 USDC</text>
+    <text x="1104" y="18" text-anchor="end" font-size="11" fill="#8691aa">2 дн</text>
+  </g>
+</svg>

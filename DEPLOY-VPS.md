@@ -1,6 +1,49 @@
-# RuDeFi — деплой на свой VPS (HTTPS + мобильная PWA)
+# RuDeFi — деплой на свой VPS
 
-Полный путь от чистого VPS до работающего `https://rudefi.твой-домен.ру` с мобильной установкой на домой.
+Два сценария — выбирай по ситуации.
+
+## ⚡ Standalone — VPS уже с другими приложениями (nginx, порты 80/443 заняты)
+
+Разворачиваем только C++ бэкенд на локальном порту 8080, твой существующий nginx проксирует к нему отдельным server-блоком. Не ломает существующие проекты.
+
+```bash
+ssh algoclimb         # твой SSH-алиас
+cd ~
+git clone https://github.com/21astroboy/RuDeFi.git
+cd RuDeFi
+./deploy-standalone.sh
+```
+
+Через 5-10 минут (первый build медленный — FetchContent качает ~30 МБ зависимостей) должен ответить `curl http://127.0.0.1:8080/api/healthz`.
+
+### После успешного запуска — настройка nginx
+
+Если хочешь на поддомене `rudefi.твой-домен` c HTTPS:
+
+```bash
+# 1. Добавь в DNS A-запись: rudefi.домен → 2.27.41.60
+# 2. Подложи server-блок:
+sudo cp nginx-snippet.conf /etc/nginx/sites-available/rudefi
+sudo sed -i 's/SERVER_NAME_HERE/rudefi.твой-домен.ру/' /etc/nginx/sites-available/rudefi
+sudo ln -s /etc/nginx/sites-available/rudefi /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# 3. SSL от Let's Encrypt (certbot у тебя уже стоит):
+sudo certbot --nginx -d rudefi.твой-домен.ру
+```
+
+Готово — `https://rudefi.твой-домен` работает, PWA устанавливается на мобилу, остальные приложения не затронуты.
+
+**Обновление:**
+```bash
+ssh algoclimb && cd ~/RuDeFi && git pull && ./deploy-standalone.sh
+```
+
+---
+
+## 🚀 Полный стек — на чистый VPS (свой nginx+certbot в докере)
+
+Если на VPS больше ничего нет — ставь полный стек с собственным nginx+certbot. Инструкция ниже.
 
 Если у тебя ещё нет VPS — рекомендую **Hetzner CX22** (~€4/мес, 2 vCPU, 4 ГБ RAM, Ubuntu 22.04) или **DigitalOcean Basic** ($6/мес). Проект легко укладывается в 1 ГБ RAM.
 
