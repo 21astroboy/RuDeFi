@@ -275,7 +275,7 @@ HttpServer::HttpServer(ServerDeps deps, ServeOptions opts)
                 }
                 if (curated && sec.verdict == "warn") {
                     sec.verdict = "ok";
-                    sec.verdict_reason = "токен в нашем доверенном списке";
+                    sec.verdict_reason = "токен в доверенном списке";
                 }
             } catch (...) { /* unparsable addr — leave verdict alone */ }
             nlohmann::json j = {
