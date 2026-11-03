@@ -1725,10 +1725,13 @@
     try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   }
 
-  function attachMetaMaskListeners() {
-    if (mmListenersAttached || !window.ethereum) return;
+  function attachMetaMaskListeners(provider) {
+    if (mmListenersAttached) return;
+    // Если provider не передали — fallback на window.ethereum (legacy flow)
+    const p = provider || window.ethereum;
+    if (!p || typeof p.on !== 'function') return;
     mmListenersAttached = true;
-    window.ethereum.on('accountsChanged', (accs2) => {
+    p.on('accountsChanged', (accs2) => {
       const a = accs2 && accs2[0];
       if (a) {
         $('addrInput').value = a;
@@ -1743,24 +1746,95 @@
     // Some wallets emit chainChanged — don't care here, scanner is multi-chain.
   }
 
+  // ---- EIP-6963 multi-wallet discovery -----------------------------
+  // Чиним зоопарк кошельков: Phantom/Rabby/OKX оборачивают window.ethereum
+  // и могут глотать запросы. EIP-6963 — стандарт где каждый кошелёк
+  // объявляет себя отдельным провайдером. Мы собираем всех и явно выбираем
+  // MetaMask (fallback — window.ethereum если EIP-6963 не поддерживается).
+  const EIP6963_PROVIDERS = [];   // [{ info: {rdns,name,uuid,icon}, provider }, ...]
+  window.addEventListener('eip6963:announceProvider', (ev) => {
+    EIP6963_PROVIDERS.push(ev.detail);
+  });
+  // Триггерим announce сразу (одни кошельки отвечают до нашего listener'а,
+  // другие — после; оба случая покрываются).
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+  // Главный шорткат — используется ВО ВСЕХ местах где раньше был window.ethereum.
+  // Логика: сохранённый при connect __activeProvider → MM через EIP-6963 →
+  // window.ethereum.providers[] с MM → window.ethereum сам. Так же обходит
+  // Phantom/Rabby обёртки на всех транзакциях (не только connect).
+  function getWallet() {
+    return window.__activeProvider
+        || pickMetaMaskProvider()
+        || (Array.isArray(window.ethereum?.providers)
+              ? window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum.providers[0]
+              : window.ethereum)
+        || null;
+  }
+
+  // Возвращает MetaMask provider (или null если его нет).
+  function pickMetaMaskProvider() {
+    // 1. EIP-6963 — предпочтительно, обходит обёртки
+    const mm = EIP6963_PROVIDERS.find(p => p.info?.rdns === 'io.metamask');
+    if (mm) return mm.provider;
+    // 2. Legacy: window.ethereum.providers[] (EIP-1193 extension)
+    const arr = window.ethereum?.providers;
+    if (Array.isArray(arr)) {
+      const found = arr.find(p => p.isMetaMask && !p.isPhantom && !p.isRabby);
+      if (found) return found;
+    }
+    // 3. Fallback: window.ethereum сам по себе (если это MM — ок)
+    if (window.ethereum?.isMetaMask) return window.ethereum;
+    return null;
+  }
+
+  // Удобный селектор для случаев когда нам нужен ЛЮБОЙ рабочий wallet
+  // (например, пользователь хочет Rabby/OKX — пусть) — но при наличии MM
+  // предпочитаем его. Возвращает { provider, name } или null.
+  function pickActiveProvider() {
+    const mm = pickMetaMaskProvider();
+    if (mm) return { provider: mm, name: 'MetaMask' };
+    if (EIP6963_PROVIDERS.length) {
+      const first = EIP6963_PROVIDERS[0];
+      return { provider: first.provider, name: first.info?.name || 'Wallet' };
+    }
+    if (window.ethereum) return { provider: window.ethereum, name: 'Wallet' };
+    return null;
+  }
+
   // Active connect — opens the MetaMask popup if needed.
   async function connectMetaMask() {
-    if (!window.ethereum) {
-      alert('MetaMask не найден. Установи расширение или вставь адрес вручную.');
-      return null;
+    // Если MM есть — всегда идём через него, игнорируя обёртки (Phantom, Rabby etc.)
+    let provider = pickMetaMaskProvider();
+    let name = 'MetaMask';
+    if (!provider) {
+      // Нет MetaMask — пробуем любой другой доступный кошелёк
+      const active = pickActiveProvider();
+      if (!active) {
+        alert('Кошелёк не найден. Установи MetaMask (или любой EIP-6963 wallet) либо вставь адрес вручную.');
+        return null;
+      }
+      provider = active.provider;
+      name = active.name;
     }
     try {
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await provider.request({ method: 'eth_requestAccounts' });
       if (!accs || !accs.length) return null;
       const addr = accs[0];
       $('addrInput').value = addr;
       setStatus(null, addr);
       saveConnection(addr);
-      attachMetaMaskListeners();
+      attachMetaMaskListeners(provider);
+      // Запоминаем какой провайдер работает — нужно для attachListeners и tryRestore
+      window.__activeProvider = provider;
       return addr;
     } catch (e) {
-      console.error(e);
-      alert('Не удалось подключить MetaMask: ' + (e?.message || e));
+      console.error('[connect]', e);
+      // Human-friendly error — ErrorCode 4001 = user rejected
+      const msg = e?.code === 4001
+        ? `${name}: ты отменил подключение.`
+        : `${name}: не удалось подключить — ${e?.message || e}`;
+      alert(msg);
       return null;
     }
   }
@@ -1775,12 +1849,13 @@
     // Pre-fill the input either way, so the saved wallet is usable as read-only.
     $('addrInput').value = saved.addr;
 
+    // Используем EIP-6963 выбранный MM, если он есть; иначе fallback на window.ethereum
+    const provider = pickMetaMaskProvider() || window.ethereum;
     let mmHasIt = false;
-    if (window.ethereum) {
+    if (provider && typeof provider.request === 'function') {
       try {
-        const accs = await window.ethereum.request({ method: 'eth_accounts' });
+        const accs = await provider.request({ method: 'eth_accounts' });
         if (accs && accs.length) {
-          // Compare case-insensitively; MetaMask returns checksum-cased.
           mmHasIt = accs[0].toLowerCase() === saved.addr.toLowerCase();
         }
       } catch (_) { /* swallow — silent restore must never alert */ }
@@ -1788,7 +1863,8 @@
     if (mmHasIt) {
       setStatus(null, saved.addr);
       saveConnection(saved.addr);          // refresh TTL
-      attachMetaMaskListeners();
+      attachMetaMaskListeners(provider);
+      window.__activeProvider = provider;
     } else {
       // Address known, but MetaMask isn't actively holding it (locked or revoked).
       setStatus('адрес сохранён');
@@ -2558,7 +2634,7 @@
   async function executeSwap(routeIdx) {
     const route = bridgeRoutesByIdx[routeIdx];
     if (!route) { alert('Маршрут не найден; перезапусти поиск'); return; }
-    if (!window.ethereum) { alert('MetaMask не установлен.'); return; }
+    if (!getWallet()) { alert('MetaMask не установлен.'); return; }
 
     // Steps to display in the modal.
     const fromOpt = $('bridgeFromToken').options[$('bridgeFromToken').selectedIndex];
@@ -2586,13 +2662,13 @@
     try {
       // ---- 1. Switch chain -----------------------------------------
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       if (!accs || !accs.length) throw new Error('Аккаунт не подключён');
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== fromChain.chain_id) {
         try {
-          await window.ethereum.request({
+          await getWallet().request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: chainIdHex(fromChain.chain_id) }],
           });
@@ -2623,7 +2699,7 @@
         };
         const apprGas = await estimateGasCost(fromChain.key, approveTx);
         next('active', apprGas.label || 'отправка approve(...)');
-        const txHashApprove = await window.ethereum.request({
+        const txHashApprove = await getWallet().request({
           method: 'eth_sendTransaction',
           params: [approveTx],
         });
@@ -2643,7 +2719,7 @@
       if (txReq.gasLimit) sendTx.gas = txReq.gasLimit;
       const bridgeGas = await estimateGasCost(fromChain.key, sendTx);
       next('active', bridgeGas.label || 'подпиши в MetaMask');
-      const txHashBridge = await window.ethereum.request({
+      const txHashBridge = await getWallet().request({
         method: 'eth_sendTransaction',
         params: [sendTx],
       });
@@ -2700,7 +2776,7 @@
     // Poll eth_getTransactionReceipt until we have one.
     for (let i = 0; i < 180; i++) {       // up to ~6 min
       try {
-        const r = await window.ethereum.request({
+        const r = await getWallet().request({
           method: 'eth_getTransactionReceipt',
           params: [txHash],
         });
@@ -2946,7 +3022,7 @@
   // returned if some lookups fail.
   async function estimateGasCost(chainKey, tx) {
     try {
-      const gasUnits = await window.ethereum.request({
+      const gasUnits = await getWallet().request({
         method: 'eth_estimateGas',
         params: [tx],
       });
@@ -3065,7 +3141,7 @@
   async function executeLendingDeposit(idx, poolField, protocolName) {
     const pool = (window.__yieldPools || [])[idx];
     if (!pool) return alert('Пул не найден');
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (!registryData) await loadRegistry();
 
     const chain = registryData?.chains.find(c => c.key === pool.chain_key);
@@ -3117,12 +3193,12 @@
     try {
       // 1. Switch chain
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       if (!accs || !accs.length) throw new Error('Аккаунт не подключён');
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== chain.chain_id) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: chainIdHex(chain.chain_id) }],
         });
@@ -3138,7 +3214,7 @@
       };
       const apprGas = await estimateGasCost(chain.key, approveTx);
       next('active', apprGas.label || 'оцениваем газ…');
-      const txApprove = await window.ethereum.request({
+      const txApprove = await getWallet().request({
         method: 'eth_sendTransaction',
         params: [approveTx],
       });
@@ -3151,7 +3227,7 @@
       const supplyTx = { from: wallet, to: poolAddr, data: supplyData };
       const supGas = await estimateGasCost(chain.key, supplyTx);
       next('active', supGas.label || 'оцениваем газ…');
-      const txSupply = await window.ethereum.request({
+      const txSupply = await getWallet().request({
         method: 'eth_sendTransaction',
         params: [supplyTx],
       });
@@ -3185,7 +3261,7 @@
   async function executeAaveWithdraw(idx) {
     const pos = (window.__aaveSupplies || [])[idx];
     if (!pos) return alert('Позиция не найдена');
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (!registryData) await loadRegistry();
     const chain = registryData?.chains.find(c => c.key === pos.chain_key);
     if (!chain) return alert('Сеть не поддерживается');
@@ -3220,11 +3296,11 @@
 
     try {
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== chain.chain_id) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: chainIdHex(chain.chain_id) }],
         });
@@ -3239,7 +3315,7 @@
       };
       const gas = await estimateGasCost(chain.key, tx);
       next('active', gas.label || 'оцениваем газ…');
-      const txHash = await window.ethereum.request({
+      const txHash = await getWallet().request({
         method: 'eth_sendTransaction',
         params: [tx],
       });
@@ -3274,7 +3350,7 @@
   async function executeCompoundDeposit(idx) {
     const pool = (window.__yieldPools || [])[idx];
     if (!pool) return alert('Пул не найден');
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (!registryData) await loadRegistry();
     const chain = registryData?.chains.find(c => c.key === pool.chain_key);
     if (!chain) return alert('Сеть не поддерживается');
@@ -3311,11 +3387,11 @@
 
     try {
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== chain.chain_id) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: chainIdHex(chain.chain_id) }],
         });
@@ -3327,7 +3403,7 @@
                        data: encodeApprove(market.comet, rawAmount) };
       const apprGas = await estimateGasCost(chain.key, apprTx);
       next('active', apprGas.label || '');
-      const txA = await window.ethereum.request({ method: 'eth_sendTransaction', params: [apprTx] });
+      const txA = await getWallet().request({ method: 'eth_sendTransaction', params: [apprTx] });
       next('done', linkTx(chain, txA));
       stepIdx++;
       await waitForReceipt(txA);
@@ -3336,7 +3412,7 @@
                       data: encodeCometSupply(market.base_address, rawAmount) };
       const supGas = await estimateGasCost(chain.key, supTx);
       next('active', supGas.label || '');
-      const txS = await window.ethereum.request({ method: 'eth_sendTransaction', params: [supTx] });
+      const txS = await getWallet().request({ method: 'eth_sendTransaction', params: [supTx] });
       next('done', linkTx(chain, txS));
       stepIdx++;
 
@@ -3355,7 +3431,7 @@
   async function executeCompoundWithdraw(idx) {
     const pos = (window.__compoundSupplies || [])[idx];
     if (!pos) return alert('Позиция не найдена');
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (!registryData) await loadRegistry();
     const chain = registryData?.chains.find(c => c.key === pos.chain_key);
     if (!chain) return alert('Сеть не поддерживается');
@@ -3385,11 +3461,11 @@
 
     try {
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== chain.chain_id) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: chainIdHex(chain.chain_id) }],
         });
@@ -3401,7 +3477,7 @@
                    data: encodeCometWithdraw(market.base_address, rawAmount) };
       const gas = await estimateGasCost(chain.key, tx);
       next('active', gas.label || '');
-      const txH = await window.ethereum.request({ method: 'eth_sendTransaction', params: [tx] });
+      const txH = await getWallet().request({ method: 'eth_sendTransaction', params: [tx] });
       next('done', linkTx(chain, txH));
       stepIdx++;
 
@@ -3427,7 +3503,7 @@
   async function executeLidoStake(idx) {
     const pool = (window.__yieldPools || [])[idx];
     if (!pool) return alert('Пул не найден');
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (pool.chain_key !== 'ethereum') {
       return alert('Lido работает только в Ethereum mainnet');
     }
@@ -3457,11 +3533,11 @@
 
     try {
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== 1) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: '0x1' }],
         });
@@ -3477,7 +3553,7 @@
       };
       const gas = await estimateGasCost('ethereum', tx);
       next('active', gas.label || '');
-      const txH = await window.ethereum.request({ method: 'eth_sendTransaction', params: [tx] });
+      const txH = await getWallet().request({ method: 'eth_sendTransaction', params: [tx] });
       next('done', linkTx(chain, txH));
       stepIdx++;
 
@@ -3984,7 +4060,7 @@
   async function revokeApproval(idx) {
     const a = lastApprovals[idx];
     if (!a) return;
-    if (!window.ethereum) return alert('MetaMask не установлен');
+    if (!getWallet()) return alert('MetaMask не установлен');
     if (!registryData) await loadRegistry();
     const chain = registryData?.chains.find(c => c.key === a.chain_key);
     if (!chain) return alert('Сеть не поддерживается');
@@ -4005,11 +4081,11 @@
 
     try {
       next('active');
-      const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accs = await getWallet().request({ method: 'eth_requestAccounts' });
       const wallet = accs[0];
-      const cur = await window.ethereum.request({ method: 'eth_chainId' });
+      const cur = await getWallet().request({ method: 'eth_chainId' });
       if (parseInt(cur, 16) !== chain.chain_id) {
-        await window.ethereum.request({
+        await getWallet().request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: chainIdHex(chain.chain_id) }],
         });
@@ -4024,7 +4100,7 @@
       };
       const gas = await estimateGasCost(chain.key, tx);
       next('active', gas.label || 'отправка approve(spender, 0)');
-      const txHash = await window.ethereum.request({
+      const txHash = await getWallet().request({
         method: 'eth_sendTransaction',
         params: [tx],
       });
