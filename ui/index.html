@@ -1337,7 +1337,7 @@
       <div class="empty">
         Нужен бесплатный ключ Etherscan — зарегай за 1 мин
         на <a href="https://etherscan.io/apis" target="_blank" rel="noopener">etherscan.io/apis</a>
-        и жми ⚙ Ключ. Одного ключа хватает на все 11 сетей (Etherscan V2 Universal API).
+        и жми ⚙ Ключ. Один ключ Etherscan V2; доступ к сетям зависит от тарифа.
       </div>
     </div>
   </section>
@@ -4204,7 +4204,7 @@
       <div class="label-modal" role="dialog">
         <h3>Etherscan API-key</h3>
         <div class="addr-preview">
-          Один ключ работает для всех 11 сетей через Etherscan V2 Universal API.<br>
+          Один ключ Etherscan V2 используется для разных сетей. История в некоторых сетях недоступна на бесплатном тарифе.<br>
           Получить бесплатно: <a href="https://etherscan.io/apis" target="_blank" rel="noopener">etherscan.io/apis</a>
           — regular account → API Keys → Add. Хранится только в твоём браузере, на сервер не шлётся.
         </div>
@@ -4236,6 +4236,26 @@
     });
   }
 
+  function parseEtherscanTransactions(response) {
+    if (response?.status === '1' && Array.isArray(response.result)) return response.result;
+    const detail = typeof response?.result === 'string' ? response.result : '';
+    const message = typeof response?.message === 'string' ? response.message : '';
+    if (response?.status === '0' &&
+        (/^no transactions found[.!]?$/i.test(detail.trim()) ||
+         (/^no transactions found[.!]?$/i.test(message.trim()) &&
+          Array.isArray(response.result) && response.result.length === 0))) return [];
+    if (/free api access is not supported|upgrade your api plan|paid plan/i.test(detail)) {
+      throw new Error('Тариф Etherscan не поддерживает историю в этой сети. Можно открыть историю в обозревателе без API-ключа.');
+    }
+    if (/invalid api key|missing.*api key/i.test(detail)) {
+      throw new Error('Неверный API-ключ Etherscan. Нажми «Ключ» и укажи ключ с etherscan.io, а не Basescan или другого обозревателя. Новый ключ может активироваться несколько минут.');
+    }
+    if (/rate limit|free api limit|too many/i.test(detail)) {
+      throw new Error('Etherscan ограничил число запросов. Подожди и повтори загрузку. ' + detail);
+    }
+    throw new Error(detail || (message && message !== 'NOTOK' ? message : 'Etherscan вернул некорректный ответ. Попробуй позже.'));
+  }
+
   async function fetchTxs(chainId, kind, wallet, apiKey) {
     const u = new URL(TX_V2_URL);
     u.searchParams.set('chainid', chainId);
@@ -4249,13 +4269,12 @@
     const r = await fetch(u.toString());
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    // Etherscan returns status="0" when there are no results — that's fine.
-    if (j.status !== '1' && !Array.isArray(j.result)) {
-      // Common cases: "No transactions found" (empty), "Invalid API Key"
-      if (typeof j.message === 'string' && /no transactions found/i.test(j.message)) return [];
-      throw new Error(j.message || j.result || 'etherscan error');
+    try {
+      return parseEtherscanTransactions(j);
+    } catch (error) {
+      // Never echo the API key back through an upstream error message.
+      throw new Error(apiKey ? error.message.split(apiKey).join('[ключ скрыт]') : error.message);
     }
-    return Array.isArray(j.result) ? j.result : [];
   }
 
   function relTime(unixSec) {
@@ -4384,7 +4403,10 @@
       const items = await fetchTxs(chainId, kind, wallet, key);
       renderTxs(items, chainId, kind, wallet);
     } catch (e) {
-      root.innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || String(e))}</div>`;
+      const explorer = TX_EXPLORERS[chainId];
+      const addressUrl = explorer + '/address/' + wallet + (kind === 'tokentx' ? '#tokentxns' : kind === 'txlistinternal' ? '#internaltx' : '');
+      root.innerHTML = `<div class="error">${escapeHtml(e.message || String(e))}</div>` +
+        (explorer ? `<p><a href="${escapeHtml(addressUrl)}" target="_blank" rel="noopener">Открыть историю в обозревателе ↗</a></p>` : '');
     }
   }
 
@@ -4587,7 +4609,7 @@
 
         <div class="modal-section">
           <div class="modal-section-title">Browser-side keys</div>
-          <label class="field">Etherscan V2 API key — для истории транзакций во всех 11 сетях</label>
+          <label class="field">Etherscan V2 API key — доступ к истории зависит от тарифа</label>
           <input type="text" id="setEtherscan" placeholder="бесплатно на etherscan.io/apis" value="${escapeHtml(curEtherscan)}" />
           <div style="font-size:11px; color:var(--muted); margin-top:-4px;">
             Хранится только в localStorage. На сервер не отправляется.
