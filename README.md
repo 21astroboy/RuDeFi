@@ -106,7 +106,7 @@ Comfortably fits inside a €4/mo Hetzner CX22 (2 vCPU, 4 GB RAM) with room to s
 
 ## Quick deploy
 
-Full step-by-step for a fresh Ubuntu VPS is in **[`DEPLOY-VPS.md`](DEPLOY-VPS.md)** (currently in Russian — PRs welcome). Three one-liners for the two common cases:
+Full step-by-step guide: **[`DEPLOY.md`](DEPLOY.md)** (English) · [`DEPLOY-VPS.md`](DEPLOY-VPS.md) (Russian). Two paths:
 
 ### A) Fresh VPS with no other apps — full stack
 
