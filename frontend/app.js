@@ -881,6 +881,7 @@
     if (name === 'swap' || name === 'bridge') openExchangeSection(name);
     document.querySelectorAll('.tab').forEach(b => {
       b.classList.toggle('active', b.dataset.tab === name);
+      b.setAttribute('aria-pressed', String(b.dataset.tab === name));
     });
     document.querySelectorAll('.tab-pane').forEach(p => {
       p.hidden = p.dataset.pane !== name;

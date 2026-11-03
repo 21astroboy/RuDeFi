@@ -2,11 +2,13 @@
 // Кэширует только статику (index.html, иконки, manifest).
 // Не кэширует /api/* — всегда свежие данные с бэкенда.
 
-const CACHE = 'rudefi-v3';
+const CACHE = 'rudefi-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/app.js',
+  '/styles/base.css',
+  '/styles/app.css',
   '/about.html',
   '/manifest.webmanifest',
   '/icon.svg',
