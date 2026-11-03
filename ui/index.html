@@ -323,6 +323,7 @@
       align-items: start;       /* labels align at top, inputs all on the same line */
     }
     .bridge-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .bridge-form .field[hidden] { display: none; }
     .bridge-form .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; min-height: 14px; }
     /* "Найти маршрут" lives in the same grid as the selects — push it down so
        its top edge lines up with the inputs (label height + gap). */
@@ -1118,7 +1119,7 @@
           <circle cx="12" cy="12" r="3"/>
         </svg>
       </span>
-      cryptoapp <span class="dim">— портфель по всем сетям</span>
+      RuDeFi <span class="dim">— портфель по всем сетям</span>
     </h1>
     <div class="header-actions">
       <button id="amlOpenBtn" class="header-btn" title="Проверить адрес (AML)">🛡 AML</button>
@@ -1167,7 +1168,8 @@
     <button class="tab" data-tab="defi">
       DeFi позиции <span class="tab-count" id="cntDefi">0</span>
     </button>
-    <button class="tab" data-tab="bridge">Обмен</button>
+    <button class="tab" data-tab="swap">Свапы</button>
+    <button class="tab" data-tab="bridge">Мосты</button>
     <button class="tab" data-tab="yield">Заработок</button>
     <button class="tab" data-tab="approvals">Approvals</button>
     <button class="tab" data-tab="txs">Транзакции</button>
@@ -1192,16 +1194,19 @@
     </div>
   </section>
 
-  <section class="tab-pane" data-pane="bridge" hidden>
+  <section class="tab-pane" data-pane="swap" id="swapPane" hidden></section>
+
+  <section class="tab-pane" data-pane="bridge" id="bridgePane" hidden>
+    <div id="exchangeWorkspace">
     <div class="card">
       <div class="defi-header">
-        <h2>Обмен токенов</h2>
-        <span class="muted defi-sub">внутри одной сети (DEX-агрегатор) или между сетями (мосты) — через LiFi</span>
+        <h2 id="exchangeTitle">Мосты между сетями</h2>
+        <span class="muted defi-sub" id="exchangeDescription">Перевод токенов из одной сети в другую через LI.FI</span>
       </div>
       <div id="mevBanner" style="margin-bottom:10px;"></div>
       <div class="bridge-form">
         <div class="field">
-          <label>Из сети</label>
+          <label id="exchangeNetworkLabel">Из сети</label>
           <select id="bridgeFromChain"></select>
         </div>
         <div class="field">
@@ -1217,7 +1222,7 @@
       </div>
       <div class="bridge-arrow">↓</div>
       <div class="bridge-form">
-        <div class="field">
+        <div class="field" id="exchangeDestinationNetwork">
           <label>В сеть</label>
           <select id="bridgeToChain"></select>
         </div>
@@ -1233,6 +1238,7 @@
 
     <div id="bridgeResult" class="card">
       <div class="empty">Заполни форму и нажми «Найти маршрут».</div>
+    </div>
     </div>
   </section>
 
@@ -1354,10 +1360,10 @@
   // of the script — without this, a single ReferenceError early on bricks
   // gas refresh, wallet restore, yield refresh, etc.
   window.addEventListener('error', (ev) => {
-    console.error('[crypto-app] script error:', ev.error || ev.message);
+    console.error('[RuDeFi] script error:', ev.error || ev.message);
   });
   window.addEventListener('unhandledrejection', (ev) => {
-    console.error('[crypto-app] unhandled rejection:', ev.reason);
+    console.error('[RuDeFi] unhandled rejection:', ev.reason);
   });
 
   const API_BASE = location.origin === 'null' || !location.origin
@@ -2230,6 +2236,7 @@
 
   // ---- Tabs ----
   function setActiveTab(name) {
+    if (name === 'swap' || name === 'bridge') openExchangeSection(name);
     document.querySelectorAll('.tab').forEach(b => {
       b.classList.toggle('active', b.dataset.tab === name);
     });
@@ -2462,6 +2469,11 @@
     const fromChain = registryData.chains.find(c => c.key === fromChainKey);
     const toChain   = registryData.chains.find(c => c.key === toChainKey);
     if (!fromChain || !toChain) return;
+    if (!exchangeChainsValid(exchangeMode, fromChain.chain_id, toChain.chain_id)) {
+      $('bridgeResult').innerHTML = '<div class="error">' +
+        (exchangeMode === 'swap' ? 'Для свапа выбери одну сеть.' : 'Для моста выбери разные сети.') + '</div>';
+      return;
+    }
     const fromTokenSel = $('bridgeFromToken');
     const toTokenSel   = $('bridgeToToken');
     const fromTokenAddr = fromTokenSel.value;
@@ -2491,21 +2503,24 @@
     url.searchParams.set('amount',     rawAmount);
     url.searchParams.set('from_address', wallet);
 
-    $('bridgeResult').innerHTML = '<div class="loading">Опрашиваем LiFi…</div>';
+    const quoteRevision = ++bridgeQuoteRevision;
+    $('bridgeResult').innerHTML = '<div class="loading">Ищем маршруты…</div>';
     const btn = $('bridgeQuoteBtn');
     btn.disabled = true;
     try {
       const resp = await fetch(url.toString());
       const data = await resp.json();
+      if (quoteRevision !== bridgeQuoteRevision) return;
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
       if (data.error) throw new Error(data.error);
       const context = Object.freeze({ fromChain, toChain, fromTokenAddr, rawAmount, wallet });
       for (const route of data.routes || []) route.quoteContext = context;
       renderBridgeResults(data);
     } catch (e) {
+      if (quoteRevision !== bridgeQuoteRevision) return;
       $('bridgeResult').innerHTML = `<div class="error">Ошибка: ${escapeHtml(e.message || e)}</div>`;
     } finally {
-      btn.disabled = false;
+      if (quoteRevision === bridgeQuoteRevision) btn.disabled = false;
     }
   }
 
@@ -2581,7 +2596,7 @@
             <div class="sub">${totalGasUsd} · ${totalGasRub}</div>
             <button class="swap-btn"
                     ${(r.steps?.length || 1) > 1 ? 'disabled title="Многошаговый маршрут — пока in-app не поддерживается"' : ''}
-                    onclick="executeSwap(${idx})">Обменять</button>
+                    onclick="executeSwap(${idx})">${exchangeMode === 'swap' ? 'Обменять' : 'Перевести'}</button>
           </div>
         </div>`;
     }
@@ -2630,7 +2645,7 @@
     back.id = 'swapModal';
     back.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true">
-        <h3>Исполнение свопа</h3>
+        <h3>Исполнение операции</h3>
         <div id="swapSteps">
           ${steps.map((s, i) => `
             <div class="step" data-i="${i}">
@@ -2911,6 +2926,12 @@
   // Re-populate the token list AND refresh the balance hint on chain change.
   $('bridgeFromChain').addEventListener('change', () => {
     populateBridgeTokens('bridgeFromChain', 'bridgeFromToken');
+    const previousDestination = $('bridgeToChain').value;
+    syncExchangeNetworks();
+    if (previousDestination !== $('bridgeToChain').value) {
+      populateBridgeTokens('bridgeToChain', 'bridgeToToken', 'USDC');
+      updateToTokenSecurity();
+    }
     updateBridgeBalance();
   });
   $('bridgeToChain').addEventListener('change', () => {
@@ -2973,17 +2994,74 @@
     }
   });
 
-  // Lazy-load the registry the first time the user opens the Bridges tab.
-  document.querySelector('.tab[data-tab="bridge"]').addEventListener('click', async () => {
-    if (registryData) return;
+  // Separate sections retain their own inputs while sharing the transaction executor.
+  let exchangeMode = 'bridge';
+  let exchangeReady = false;
+  let exchangeOpenRevision = 0;
+  let bridgeQuoteRevision = 0;
+  const exchangeFormState = {};
+  function exchangeChainsValid(mode, from, to) {
+    return mode === 'swap' ? from === to : from !== to;
+  }
+  function syncExchangeNetworks() {
+    const from = $('bridgeFromChain').value;
+    const to = $('bridgeToChain');
+    for (const option of to.options) option.disabled = exchangeMode === 'bridge' && option.value === from;
+    if (exchangeMode === 'swap') to.value = from;
+    else if (to.value === from || !to.value) {
+      to.value = Array.from(to.options).find(o => !o.disabled)?.value || '';
+    }
+    to.disabled = exchangeMode === 'swap';
+  }
+  async function openExchangeSection(mode) {
+    const revision = ++exchangeOpenRevision;
+    if (exchangeReady) {
+      exchangeFormState[exchangeMode] = Object.fromEntries(
+        ['bridgeFromChain', 'bridgeToChain', 'bridgeFromToken', 'bridgeToToken', 'bridgeAmount']
+          .map(id => [id, $(id).value]));
+    }
+    exchangeReady = false;
+    exchangeMode = mode;
+    ++bridgeQuoteRevision;
+    bridgeRoutesByIdx = [];
+    $(mode === 'swap' ? 'swapPane' : 'bridgePane').appendChild($('exchangeWorkspace'));
+    $('exchangeTitle').textContent = mode === 'swap' ? 'Свапы' : 'Мосты между сетями';
+    $('exchangeDescription').textContent = mode === 'swap'
+      ? 'Обмен одного токена на другой в одной сети через LI.FI'
+      : 'Перевод токенов из одной сети в другую через LI.FI';
+    $('exchangeNetworkLabel').textContent = mode === 'swap' ? 'Сеть' : 'Из сети';
+    $('exchangeDestinationNetwork').hidden = mode === 'swap';
+    $('bridgeQuoteBtn').textContent = mode === 'swap' ? 'Найти свап' : 'Найти мост';
+    $('bridgeQuoteBtn').disabled = true;
+    $('bridgeResult').innerHTML = '<div class="empty">Загружаем список сетей…</div>';
     await loadRegistry();
-    populateBridgeChain('bridgeFromChain', 'ethereum');
-    populateBridgeChain('bridgeToChain',   'arbitrum');
-    populateBridgeTokens('bridgeFromChain', 'bridgeFromToken', 'USDC');
-    populateBridgeTokens('bridgeToChain',   'bridgeToToken',   'USDC');
+    if (revision !== exchangeOpenRevision) return;
+    if (!registryData) {
+      $('bridgeResult').innerHTML = '<div class="error">Не удалось загрузить сети. Открой раздел ещё раз.</div>';
+      return;
+    }
+    const saved = exchangeFormState[mode];
+    populateBridgeChain('bridgeFromChain', saved?.bridgeFromChain || 'ethereum');
+    populateBridgeChain('bridgeToChain', saved?.bridgeToChain || (mode === 'swap' ? 'ethereum' : 'arbitrum'));
+    syncExchangeNetworks();
+    populateBridgeTokens('bridgeFromChain', 'bridgeFromToken', mode === 'swap' ? 'ETH' : 'USDC');
+    populateBridgeTokens('bridgeToChain', 'bridgeToToken', 'USDC');
+    if (saved) {
+      for (const id of ['bridgeFromToken', 'bridgeToToken']) {
+        if (Array.from($(id).options).some(o => o.value === saved[id])) $(id).value = saved[id];
+      }
+    }
+    $('bridgeAmount').value = saved?.bridgeAmount || '';
+    $('bridgeAmount').style.borderColor = '';
+    $('bridgeAmount').title = '';
+    exchangeReady = true;
+    $('bridgeQuoteBtn').disabled = false;
+    $('bridgeResult').innerHTML = '<div class="empty">Выбери токены и сумму, затем нажми «' +
+      (mode === 'swap' ? 'Найти свап' : 'Найти мост') + '».</div>';
     updateBridgeBalance();
     updateMevBanner();
-  });
+    updateToTokenSecurity();
+  }
 
   // ============== Protocol deep-links ================================
   // DeFiLlama is analytics-only; the user can't deposit from there. For each
