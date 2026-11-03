@@ -1028,6 +1028,7 @@
       /* Шапка — вертикально, адресный инпут на всю ширину */
       .row { flex-direction: column; align-items: stretch; gap: 8px; }
       input.addr { flex: 1 1 100%; min-width: 0; width: 100%; font-size: 14px; }
+      #walletHelp a:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; }
       .primary, button:not(.chain-pill):not(.seg-btn):not(.swap-btn):not(.max-btn) {
         width: 100%;
       }
@@ -1134,6 +1135,12 @@
       <span class="grow"></span>
       <label class="toggle"><input type="checkbox" id="includeZero" /> показать нулевые</label>
       <span id="lastUpdated" class="pill" style="display:none;"></span>
+    </div>
+    <div id="walletHelp" hidden style="margin-top:12px;line-height:1.6;">
+      <p>На компьютере установи расширение MetaMask и разблокируй кошелёк.
+      На телефоне открой сайт во встроенном браузере приложения MetaMask, затем нажми «Подключить MetaMask».</p>
+      <a id="openMetaMask" href="https://link.metamask.io" rel="noopener">Открыть сайт в MetaMask</a>
+      · <a href="https://metamask.io/download/" target="_blank" rel="noopener">Установить MetaMask</a>
     </div>
     <div id="walletBook" class="wallet-book"></div>
   </div>
@@ -1594,6 +1601,7 @@
         if (!a) return;
         document.getElementById('addrInput').value = a;
         saveConnection(a);
+        updateWalletStatus();
         renderWalletBook(); // re-highlight
         doScan();
       });
@@ -1693,184 +1701,211 @@
     }
   }
 
-  // ---- MetaMask connection persistence (30-min rolling TTL) ----
+  // ---- MetaMask connection persistence and provider lifecycle ----
   const STORAGE_KEY = 'cryptoapp.connection';
   const CONNECTION_TTL_MS = 30 * 60 * 1000;
-  let mmListenersAttached = false;
+  let walletListenerProvider = null;
+  let walletHandlers = null;
+  let walletConnectPending = false;
+  let walletConnectedAddress = null;
 
   function saveConnection(addr) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        addr,
-        connectedAt: Date.now(),
-      }));
-    } catch (_) { /* private mode / quota — ignore */ }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({addr, connectedAt: Date.now()}));
+    } catch (_) {}
   }
   function loadConnection() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      if (!data || !data.addr) return null;
-      if (Date.now() - (data.connectedAt || 0) > CONNECTION_TTL_MS) {
-        localStorage.removeItem(STORAGE_KEY);
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!data || !/^0x[0-9a-f]{40}$/i.test(data.addr || '') ||
+          Date.now() - (data.connectedAt || 0) > CONNECTION_TTL_MS) {
+        clearConnection();
         return null;
       }
       return data;
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   }
   function clearConnection() {
     try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   }
-
+  function updateWalletStatus() {
+    const watching = $('addrInput').value.trim();
+    const connected = walletConnectedAddress;
+    if (connected) {
+      setStatus(null, connected);
+      $('status').title = 'MetaMask: ' + connected +
+        (watching.toLowerCase() !== connected.toLowerCase() ? ' · Просматривается другой адрес' : '');
+      $('connectBtn').textContent = 'MetaMask подключён';
+    } else {
+      setStatus(watching ? 'просмотр адреса' : 'не подключён');
+      $('connectBtn').textContent = 'Подключить MetaMask';
+    }
+  }
+  function applyWalletAccounts(provider, accounts, followAccount = true) {
+    if (window.__activeProvider !== provider) return;
+    const address = Array.isArray(accounts) && /^0x[0-9a-f]{40}$/i.test(accounts[0] || '')
+      ? accounts[0] : null;
+    if (walletConnectedAddress?.toLowerCase() !== address?.toLowerCase()) bridgeRoutesByIdx = [];
+    walletConnectedAddress = address;
+    if (address) {
+      if (followAccount) $('addrInput').value = address;
+      saveConnection($('addrInput').value.trim() || address);
+    } else {
+      clearConnection();
+    }
+    updateWalletStatus();
+    renderWalletBook();
+  }
   function attachMetaMaskListeners(provider) {
-    if (mmListenersAttached) return;
-    // Если provider не передали — fallback на window.ethereum (legacy flow)
-    const p = provider || window.ethereum;
-    if (!p || typeof p.on !== 'function') return;
-    mmListenersAttached = true;
-    p.on('accountsChanged', (accs2) => {
-      const a = accs2 && accs2[0];
-      if (a) {
-        $('addrInput').value = a;
-        setStatus(null, a);
-        saveConnection(a);
-        doScan();
-      } else {
-        clearConnection();
-        setStatus('не подключён');
+    if (walletListenerProvider === provider) return;
+    if (walletListenerProvider && walletHandlers && typeof walletListenerProvider.removeListener === 'function') {
+      for (const [name, handler] of Object.entries(walletHandlers)) {
+        walletListenerProvider.removeListener(name, handler);
       }
-    });
-    // Some wallets emit chainChanged — don't care here, scanner is multi-chain.
+    }
+    walletListenerProvider = provider;
+    walletHandlers = null;
+    if (typeof provider?.on !== 'function') return;
+    walletHandlers = {
+      accountsChanged: (accounts) => {
+        if (window.__activeProvider !== provider) return;
+        applyWalletAccounts(provider, accounts);
+        if (walletConnectedAddress) doScan();
+      },
+      disconnect: () => {
+        if (window.__activeProvider !== provider) return;
+        applyWalletAccounts(provider, []);
+      },
+      chainChanged: () => {
+        if (window.__activeProvider !== provider) return;
+        // Portfolio scanning is multi-chain; invalidate quotes tied to the old wallet state.
+        bridgeRoutesByIdx = [];
+        updateWalletStatus();
+      },
+    };
+    for (const [name, handler] of Object.entries(walletHandlers)) provider.on(name, handler);
   }
 
-  // ---- EIP-6963 multi-wallet discovery -----------------------------
-  // Чиним зоопарк кошельков: Phantom/Rabby/OKX оборачивают window.ethereum
-  // и могут глотать запросы. EIP-6963 — стандарт где каждый кошелёк
-  // объявляет себя отдельным провайдером. Мы собираем всех и явно выбираем
-  // MetaMask (fallback — window.ethereum если EIP-6963 не поддерживается).
-  const EIP6963_PROVIDERS = [];   // [{ info: {rdns,name,uuid,icon}, provider }, ...]
-  window.addEventListener('eip6963:announceProvider', (ev) => {
-    EIP6963_PROVIDERS.push(ev.detail);
+  // EIP-6963 takes priority over legacy flags (other wallets may also set isMetaMask).
+  const EIP6963_PROVIDERS = [];
+  window.addEventListener('eip6963:announceProvider', (event) => {
+    const detail = event.detail;
+    if (typeof detail?.info?.uuid !== 'string' || !detail.info.uuid ||
+        typeof detail.info.rdns !== 'string' || typeof detail.provider?.request !== 'function') return;
+    if (!EIP6963_PROVIDERS.some(p => p.provider === detail.provider || p.info.uuid === detail.info.uuid)) {
+      EIP6963_PROVIDERS.push(detail);
+    }
   });
-  // Триггерим announce сразу (одни кошельки отвечают до нашего listener'а,
-  // другие — после; оба случая покрываются).
   window.dispatchEvent(new Event('eip6963:requestProvider'));
 
-  // Главный шорткат — используется ВО ВСЕХ местах где раньше был window.ethereum.
-  // Логика: сохранённый при connect __activeProvider → MM через EIP-6963 →
-  // window.ethereum.providers[] с MM → window.ethereum сам. Так же обходит
-  // Phantom/Rabby обёртки на всех транзакциях (не только connect).
-  function getWallet() {
-    return window.__activeProvider
-        || pickMetaMaskProvider()
-        || (Array.isArray(window.ethereum?.providers)
-              ? window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum.providers[0]
-              : window.ethereum)
-        || null;
-  }
-
-  // Возвращает MetaMask provider (или null если его нет).
   function pickMetaMaskProvider() {
-    // 1. EIP-6963 — предпочтительно, обходит обёртки
-    const mm = EIP6963_PROVIDERS.find(p => p.info?.rdns === 'io.metamask');
-    if (mm) return mm.provider;
-    // 2. Legacy: window.ethereum.providers[] (EIP-1193 extension)
-    const arr = window.ethereum?.providers;
-    if (Array.isArray(arr)) {
-      const found = arr.find(p => p.isMetaMask && !p.isPhantom && !p.isRabby);
-      if (found) return found;
-    }
-    // 3. Fallback: window.ethereum сам по себе (если это MM — ок)
-    if (window.ethereum?.isMetaMask) return window.ethereum;
-    return null;
+    const announced = EIP6963_PROVIDERS.find(p => p.info.rdns === 'io.metamask');
+    if (announced) return announced.provider;
+    const isMetaMask = p => typeof p?.request === 'function' && p.isMetaMask &&
+      !p.isPhantom && !p.isRabby && !p.isBraveWallet && !p.isCoinbaseWallet && !p.isOkxWallet;
+    const providers = window.ethereum?.providers;
+    if (Array.isArray(providers)) return providers.find(isMetaMask) || null;
+    return isMetaMask(window.ethereum) ? window.ethereum : null;
   }
-
-  // Удобный селектор для случаев когда нам нужен ЛЮБОЙ рабочий wallet
-  // (например, пользователь хочет Rabby/OKX — пусть) — но при наличии MM
-  // предпочитаем его. Возвращает { provider, name } или null.
-  function pickActiveProvider() {
-    const mm = pickMetaMaskProvider();
-    if (mm) return { provider: mm, name: 'MetaMask' };
-    if (EIP6963_PROVIDERS.length) {
-      const first = EIP6963_PROVIDERS[0];
-      return { provider: first.provider, name: first.info?.name || 'Wallet' };
-    }
-    if (window.ethereum) return { provider: window.ethereum, name: 'Wallet' };
-    return null;
+  function getWallet() {
+    return window.__activeProvider || pickMetaMaskProvider();
   }
-
-  // Active connect — opens the MetaMask popup if needed.
+  async function waitForMetaMask(timeout = 1500) {
+    const existing = pickMetaMaskProvider();
+    if (existing) return existing;
+    return new Promise(resolve => {
+      let timer;
+      const finish = () => {
+        clearTimeout(timer);
+        window.removeEventListener('ethereum#initialized', check);
+        window.removeEventListener('eip6963:announceProvider', check);
+        resolve(pickMetaMaskProvider());
+      };
+      const check = () => { if (pickMetaMaskProvider()) finish(); };
+      window.addEventListener('ethereum#initialized', check);
+      window.addEventListener('eip6963:announceProvider', check);
+      timer = setTimeout(finish, timeout);
+      window.dispatchEvent(new Event('eip6963:requestProvider'));
+    });
+  }
+  function metaMaskDappLink(href) {
+    const url = new URL(href);
+    if (url.protocol !== 'https:') return null;
+    return 'https://link.metamask.io/dapp/' + url.host + url.pathname + url.search + url.hash;
+  }
+  function showMetaMaskHelp() {
+    const panel = $('walletHelp');
+    const link = metaMaskDappLink(location.href);
+    $('openMetaMask').hidden = !link;
+    if (link) $('openMetaMask').href = link;
+    panel.hidden = false;
+    setStatus('MetaMask не найден');
+  }
   async function connectMetaMask() {
-    // Если MM есть — всегда идём через него, игнорируя обёртки (Phantom, Rabby etc.)
-    let provider = pickMetaMaskProvider();
-    let name = 'MetaMask';
-    if (!provider) {
-      // Нет MetaMask — пробуем любой другой доступный кошелёк
-      const active = pickActiveProvider();
-      if (!active) {
-        alert('Кошелёк не найден. Установи MetaMask (или любой EIP-6963 wallet) либо вставь адрес вручную.');
+    if (walletConnectPending) return null;
+    walletConnectPending = true;
+    const button = $('connectBtn');
+    button.disabled = true;
+    button.textContent = 'Подключение…';
+    try {
+      const provider = await waitForMetaMask();
+      if (!provider) {
+        showMetaMaskHelp();
         return null;
       }
-      provider = active.provider;
-      name = active.name;
-    }
-    try {
-      const accs = await provider.request({ method: 'eth_requestAccounts' });
-      if (!accs || !accs.length) return null;
-      const addr = accs[0];
-      $('addrInput').value = addr;
-      setStatus(null, addr);
-      saveConnection(addr);
-      attachMetaMaskListeners(provider);
-      // Запоминаем какой провайдер работает — нужно для attachListeners и tryRestore
+      const accounts = await provider.request({method: 'eth_requestAccounts'});
+      if (!Array.isArray(accounts) || !/^0x[0-9a-f]{40}$/i.test(accounts[0] || '')) {
+        throw new Error('MetaMask не предоставил адрес аккаунта');
+      }
       window.__activeProvider = provider;
-      return addr;
-    } catch (e) {
-      console.error('[connect]', e);
-      // Human-friendly error — ErrorCode 4001 = user rejected
-      const msg = e?.code === 4001
-        ? `${name}: ты отменил подключение.`
-        : `${name}: не удалось подключить — ${e?.message || e}`;
-      alert(msg);
+      attachMetaMaskListeners(provider);
+      applyWalletAccounts(provider, accounts);
+      $('walletHelp').hidden = true;
+      return accounts[0];
+    } catch (error) {
+      const code = error?.code ?? error?.data?.originalError?.code;
+      alert(code === 4001 ? 'Ты отменил подключение MetaMask.'
+        : code === -32002 ? 'Запрос уже открыт в MetaMask. Открой кошелёк и подтверди подключение.'
+        : 'MetaMask: не удалось подключить — ' + (error?.message || error));
       return null;
+    } finally {
+      walletConnectPending = false;
+      button.disabled = false;
+      updateWalletStatus();
     }
   }
-
-  // Silent restore on page load — never opens a popup. If MetaMask is locked
-  // we keep the address in the input (so manual scan still works) but mark
-  // status as "не подключён" so the user knows to re-connect for live updates.
+  async function syncMetaMaskAccounts() {
+    const provider = window.__activeProvider;
+    if (!provider) return;
+    try {
+      const accounts = await provider.request({method: 'eth_accounts'});
+      // Keep a manually entered watch address when returning from the wallet app.
+      const follow = !$('addrInput').value ||
+        $('addrInput').value.toLowerCase() === walletConnectedAddress?.toLowerCase();
+      applyWalletAccounts(provider, accounts, follow);
+    } catch (_) {
+      if (window.__activeProvider === provider) {
+        walletConnectedAddress = null;
+        updateWalletStatus();
+      }
+    }
+  }
   async function tryRestoreConnection() {
     const saved = loadConnection();
-    if (!saved) return;
-
-    // Pre-fill the input either way, so the saved wallet is usable as read-only.
-    $('addrInput').value = saved.addr;
-
-    // Используем EIP-6963 выбранный MM, если он есть; иначе fallback на window.ethereum
-    const provider = pickMetaMaskProvider() || window.ethereum;
-    let mmHasIt = false;
-    if (provider && typeof provider.request === 'function') {
-      try {
-        const accs = await provider.request({ method: 'eth_accounts' });
-        if (accs && accs.length) {
-          mmHasIt = accs[0].toLowerCase() === saved.addr.toLowerCase();
-        }
-      } catch (_) { /* swallow — silent restore must never alert */ }
-    }
-    if (mmHasIt) {
-      setStatus(null, saved.addr);
-      saveConnection(saved.addr);          // refresh TTL
-      attachMetaMaskListeners(provider);
+    if (saved) $('addrInput').value = saved.addr;
+    const provider = await waitForMetaMask();
+    if (provider) {
       window.__activeProvider = provider;
-    } else {
-      // Address known, but MetaMask isn't actively holding it (locked or revoked).
-      setStatus('адрес сохранён');
+      attachMetaMaskListeners(provider);
+      await syncMetaMaskAccounts();
     }
-    doScan();
+    updateWalletStatus();
+    if (/^0x[0-9a-f]{40}$/i.test($('addrInput').value)) doScan();
   }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncMetaMaskAccounts();
+  });
+  window.addEventListener('pageshow', () => syncMetaMaskAccounts());
 
   // ---- Scan & render ----
   async function fetchScan(wallet, includeZero) {
@@ -4791,9 +4826,7 @@
     if (document.visibilityState === 'visible') refreshGasBar();
   }, 20000);
 
-  // Try silent restore once the page is ready. If MetaMask is loaded as an
-  // injected provider it's already on `window.ethereum` synchronously by the
-  // time this script runs, so a small microtask delay is enough.
+  // Restore without popups, including delayed provider injection on mobile.
   setTimeout(tryRestoreConnection, 0);
 
   // Address book — рендерим при старте и обновляем highlight при любой смене адреса
@@ -4801,6 +4834,7 @@
   document.getElementById('addrInput').addEventListener('input', () => {
     // live-подсветка активного чипа по мере ввода
     renderWalletBook();
+    updateWalletStatus();
   });
 
   // ============== PWA service worker registration =====================
