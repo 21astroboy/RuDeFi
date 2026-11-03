@@ -833,6 +833,114 @@
     .label-modal .modal-actions .danger:hover { border-color: #ff6b6b; }
 
     /* ========================================================
+       Header actions (AML / Settings buttons) + расширенные модалки.
+       ======================================================== */
+    .header-actions {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .header-btn {
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .header-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    /* Большая модалка (для AML/Settings — больше, чем простая label-modal) */
+    .big-modal {
+      max-width: 560px;
+      width: 100%;
+    }
+    .big-modal h3 { margin: 0 0 6px; font-size: 17px; }
+    .big-modal .modal-sub {
+      font-size: 12px; color: var(--muted); margin-bottom: 16px;
+    }
+    .big-modal .modal-section {
+      margin-bottom: 18px;
+    }
+    .big-modal .modal-section:last-child { margin-bottom: 0; }
+    .big-modal .modal-section-title {
+      font-size: 11px; letter-spacing: 0.6px; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .big-modal label.field {
+      display: block;
+      font-size: 12px; color: var(--muted); margin-bottom: 6px;
+    }
+    .big-modal input[type=text],
+    .big-modal select {
+      width: 100%; box-sizing: border-box;
+      background: var(--panel-3); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 10px 12px; font: inherit; font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .big-modal input[type=text]:focus,
+    .big-modal select:focus { outline: none; border-color: var(--accent); }
+    .big-modal .inline-row { display: flex; gap: 8px; align-items: center; }
+    .big-modal .inline-row > input[type=text] { flex: 1 1 auto; margin-bottom: 0; }
+    .big-modal .inline-row > select { flex: 0 0 150px; margin-bottom: 0; }
+
+    /* AML verdict box */
+    .aml-verdict {
+      padding: 14px; border-radius: 10px;
+      margin-top: 10px;
+      border: 1px solid;
+    }
+    .aml-verdict.clean  { background: rgba(109,223,142,0.08); border-color: #6ddf8e; }
+    .aml-verdict.warn   { background: rgba(241,184,71,0.1); border-color: #f1b847; }
+    .aml-verdict.danger { background: rgba(255,107,107,0.1); border-color: #ff6b6b; }
+    .aml-verdict.loading{ background: var(--panel-3); border-color: var(--border); }
+    .aml-verdict .verdict-title {
+      font-size: 15px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .aml-verdict.clean  .verdict-title { color: #6ddf8e; }
+    .aml-verdict.warn   .verdict-title { color: #f1b847; }
+    .aml-verdict.danger .verdict-title { color: #ff6b6b; }
+    .aml-verdict .verdict-sub {
+      font-size: 12px; color: var(--muted); margin-top: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-all;
+    }
+    .aml-flags {
+      margin-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .aml-flag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+    }
+    .aml-flag.danger { background: rgba(255,107,107,0.15); border-color: rgba(255,107,107,0.5); color: #ff6b6b; }
+    .aml-flag.warn   { background: rgba(241,184,71,0.15);  border-color: rgba(241,184,71,0.5);  color: #f1b847; }
+
+    .status-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      margin-bottom: 8px;
+    }
+    .status-row .status-label { font-size: 13px; color: var(--fg-soft); }
+    .status-row .status-value { font-size: 12px; }
+    .status-row .status-value.ok    { color: #6ddf8e; }
+    .status-row .status-value.off   { color: #8691aa; }
+    .status-row .status-value.warn  { color: #f1b847; }
+
+    @media (max-width: 480px) {
+      .header-actions { gap: 4px; }
+      .header-btn { padding: 6px 8px; font-size: 12px; }
+    }
+
+    /* ========================================================
        Транзакции — список tx с направлением (in/out), токеном и ссылкой
        на эксплорер. Компактный «email-like» вид.
        ======================================================== */
@@ -1011,7 +1119,11 @@
       </span>
       cryptoapp <span class="dim">— портфель по всем сетям</span>
     </h1>
-    <span id="status" class="pill idle"><span class="dot"></span><span id="statusText">не подключён</span></span>
+    <div class="header-actions">
+      <button id="amlOpenBtn" class="header-btn" title="Проверить адрес (AML)">🛡 AML</button>
+      <button id="settingsOpenBtn" class="header-btn" title="Настройки">⚙</button>
+      <span id="status" class="pill idle"><span class="dot"></span><span id="statusText">не подключён</span></span>
+    </div>
   </header>
 
   <div class="card">
@@ -4186,6 +4298,278 @@
       refreshTxs();
     }
   });
+
+  // ============== AML / counterparty address check (GoPlus) ============
+  // Критичная функция для P2P-сделок: перед принятием перевода проверяем
+  // отправителя на 20+ сигналов GoPlus — mixer, phishing, sanctions,
+  // honeypot deployer, cybercrime и т.д. Запрос идёт напрямую из браузера
+  // (GoPlus разрешает CORS, API бесплатный, лимитов на анон. запросы
+  // хватает для ручного использования).
+  const AML_LAST = { addr: '', chainId: '1', res: null };
+
+  // Критические флаги (красный verdict). Проверяем is-truthy "1" или число>0.
+  const AML_CRITICAL_FLAGS = {
+    sanctioned:                '🚫 санкционный адрес (OFAC/SDN)',
+    sanctioned_address:        '🚫 санкционный адрес',
+    money_laundering:          '💸 отмывание денег',
+    honeypot_related_address:  '🍯 связан с honeypot-токенами',
+    phishing_activities:       '🎣 фишинг',
+    stealing_attack:           '🦹 кражи криптовалюты',
+    cybercrime:                '👾 киберпреступность',
+    financial_crime:           '📑 финансовые преступления',
+    blackmail_activities:      '✉ шантаж / вымогательство',
+    darkweb_transactions:      '🌑 даркнет-транзакции',
+    mixer:                     '🌀 миксер (Tornado и т.п.)',
+    malicious_mining_activities: '⛏ вредоносный майнинг',
+    fake_kyc:                  '🪪 поддельный KYC',
+  };
+  // Жёлтые флаги — не критические, но стоит знать
+  const AML_WARN_FLAGS = {
+    blacklist_doubt:           '📋 подозрение на блэклист биржи',
+    gas_abuse:                 '⛽ злоупотребление газом',
+    fake_standard_interface:   '📝 поддельный ERC-20 интерфейс',
+    reinit:                    '🔄 contract reinit (proxy abuse)',
+  };
+
+  async function amlCheck(address, chainId) {
+    // GoPlus Address Security endpoint
+    const url = `https://api.gopluslabs.io/api/v1/address_security/${address}?chain_id=${chainId}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (j.code !== 1) throw new Error(j.message || 'GoPlus error');
+    return j.result || {};
+  }
+
+  function amlAnalyze(result) {
+    const criticalHits = [];
+    const warnHits = [];
+    for (const [k, label] of Object.entries(AML_CRITICAL_FLAGS)) {
+      const v = result[k];
+      if (v && v !== '0' && v !== 0 && v !== 'null') criticalHits.push({ k, label, v });
+    }
+    for (const [k, label] of Object.entries(AML_WARN_FLAGS)) {
+      const v = result[k];
+      if (v && v !== '0' && v !== 0 && v !== 'null') warnHits.push({ k, label, v });
+    }
+    // number_of_malicious_contracts_created: число — жёлтый если >0, красный если >=5
+    const nMalic = Number(result.number_of_malicious_contracts_created || 0);
+    if (nMalic >= 5) criticalHits.push({ k:'malicious_contracts', label: `☠ создал ${nMalic} вредоносных контрактов`, v: nMalic });
+    else if (nMalic > 0) warnHits.push({ k:'malicious_contracts', label: `⚠ создал ${nMalic} подозрительных контракта`, v: nMalic });
+
+    const isContract = result.contract_address === '1' || result.contract_address === 1;
+
+    let verdict, title, sub;
+    if (criticalHits.length) {
+      verdict = 'danger';
+      title = '🚨 АДРЕС В ЧЁРНОМ СПИСКЕ';
+      sub = 'Не принимай транзакции с этого адреса. Биржа может заблокировать твой счёт при их получении.';
+    } else if (warnHits.length) {
+      verdict = 'warn';
+      title = '⚠ Есть замечания';
+      sub = 'Не критично, но стоит перепроверить контрагента перед крупной сделкой.';
+    } else {
+      verdict = 'clean';
+      title = '✓ Адрес чист';
+      sub = isContract ? 'Это контракт, явных рисков по GoPlus не обнаружено.' : 'По базе GoPlus (20+ источников) флагов нет.';
+    }
+    return { verdict, title, sub, criticalHits, warnHits, isContract };
+  }
+
+  function amlRender(container, analysis, address) {
+    const flagsHtml = [...analysis.criticalHits.map(h => `<span class="aml-flag danger">${escapeHtml(h.label)}</span>`),
+                      ...analysis.warnHits.map(h => `<span class="aml-flag warn">${escapeHtml(h.label)}</span>`)].join('');
+    container.innerHTML = `
+      <div class="aml-verdict ${analysis.verdict}">
+        <div class="verdict-title">${escapeHtml(analysis.title)}</div>
+        <div class="verdict-sub">${escapeHtml(address)}</div>
+        <div class="verdict-sub" style="font-family:inherit; margin-top:6px;">${escapeHtml(analysis.sub)}</div>
+        ${flagsHtml ? `<div class="aml-flags">${flagsHtml}</div>` : ''}
+      </div>`;
+  }
+
+  function openAmlModal(prefillAddr) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'label-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="label-modal big-modal" role="dialog">
+        <h3>🛡 Проверка адреса (AML)</h3>
+        <div class="modal-sub">
+          Проверка контрагента перед P2P-сделкой: санкции, mixer, phishing, honeypot deployers,
+          cybercrime. Данные GoPlus (агрегирует 20+ источников: Chainalysis, SlowMist, OFAC, биржевые блэклисты).
+        </div>
+        <label class="field">0x-адрес контрагента</label>
+        <div class="inline-row" style="margin-bottom:10px;">
+          <input type="text" id="amlInput" placeholder="0x742d35cc6634c0532925a3b844bc45436aec1234" value="${escapeHtml(prefillAddr || '')}" />
+          <select id="amlChain">
+            <option value="1">Ethereum</option>
+            <option value="42161">Arbitrum</option>
+            <option value="10">Optimism</option>
+            <option value="8453">Base</option>
+            <option value="137">Polygon</option>
+            <option value="56">BNB</option>
+            <option value="43114">Avalanche</option>
+            <option value="100">Gnosis</option>
+            <option value="59144">Linea</option>
+            <option value="534352">Scroll</option>
+            <option value="81457">Blast</option>
+          </select>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button type="button" class="primary" id="amlRunBtn">Проверить</button>
+          <button type="button" id="amlCloseBtn" style="margin-left:auto;">Закрыть</button>
+        </div>
+        <div id="amlResult"></div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#amlCloseBtn').addEventListener('click', close);
+
+    const input = backdrop.querySelector('#amlInput');
+    const chainSel = backdrop.querySelector('#amlChain');
+    const result = backdrop.querySelector('#amlResult');
+    setTimeout(() => input.focus(), 50);
+
+    const run = async () => {
+      const addr = input.value.trim();
+      const chainId = chainSel.value;
+      if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+        result.innerHTML = '<div class="aml-verdict warn"><div class="verdict-title">⚠ Невалидный адрес</div><div class="verdict-sub">Нужно 42 символа, начинается с 0x.</div></div>';
+        return;
+      }
+      result.innerHTML = '<div class="aml-verdict loading"><div class="verdict-title">⟳ Проверяю…</div><div class="verdict-sub">GoPlus обычно отвечает за 1-3 секунды.</div></div>';
+      try {
+        const raw = await amlCheck(addr, chainId);
+        // GoPlus возвращает { result: { "0xaddr": {...} } } — ключи lowercased
+        const data = raw[addr.toLowerCase()] || raw[addr] || {};
+        const analysis = amlAnalyze(data);
+        amlRender(result, analysis, addr);
+        AML_LAST.addr = addr; AML_LAST.chainId = chainId; AML_LAST.res = analysis;
+      } catch (e) {
+        result.innerHTML = `<div class="aml-verdict warn"><div class="verdict-title">⚠ Ошибка запроса</div><div class="verdict-sub">${escapeHtml(e.message || String(e))}</div></div>`;
+      }
+    };
+    backdrop.querySelector('#amlRunBtn').addEventListener('click', run);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+
+    // Если префилл есть — сразу запускаем
+    if (prefillAddr && /^0x[0-9a-fA-F]{40}$/.test(prefillAddr)) {
+      setTimeout(run, 100);
+    }
+  }
+
+  // ============== Settings modal ======================================
+  // Централизует все пользовательские настройки:
+  //  • Etherscan V2 API key (для вкладки Транзакции)
+  //  • Статус backend-конфигурации (Alchemy и т.п.)
+  //  • Информация о версии
+  async function fetchBackendStatus() {
+    try {
+      const r = await fetch(API_BASE + '/api/config/status');
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (_) { return null; }
+  }
+
+  function openSettingsModal() {
+    const curEtherscan = getEtherscanKey();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'label-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="label-modal big-modal" role="dialog">
+        <h3>⚙ Настройки</h3>
+        <div class="modal-sub">Все ключи и настройки — локально в твоём браузере.</div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">Browser-side keys</div>
+          <label class="field">Etherscan V2 API key — для истории транзакций во всех 11 сетях</label>
+          <input type="text" id="setEtherscan" placeholder="бесплатно на etherscan.io/apis" value="${escapeHtml(curEtherscan)}" />
+          <div style="font-size:11px; color:var(--muted); margin-top:-4px;">
+            Хранится только в localStorage. На сервер не отправляется.
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">Server configuration</div>
+          <div id="setServerStatus">
+            <div class="status-row">
+              <span class="status-label">Загрузка…</span>
+              <span class="status-value off">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">About</div>
+          <div class="status-row">
+            <span class="status-label">RuDeFi — open source</span>
+            <span class="status-value ok">
+              <a href="https://github.com/21astroboy/RuDeFi" target="_blank" rel="noopener" style="font-size:12px;">GitHub ↗</a>
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Лицензия</span>
+            <span class="status-value off">MIT</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="setCancel">Отмена</button>
+          <button type="button" class="primary" id="setSave">Сохранить</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#setCancel').addEventListener('click', close);
+
+    const save = () => {
+      const k = backdrop.querySelector('#setEtherscan').value.trim();
+      setEtherscanKey(k);
+      close();
+    };
+    backdrop.querySelector('#setSave').addEventListener('click', save);
+
+    // Async: fetch backend status
+    fetchBackendStatus().then(st => {
+      const box = backdrop.querySelector('#setServerStatus');
+      if (!box) return;  // modal closed in the meantime
+      if (!st) {
+        box.innerHTML = `
+          <div class="status-row">
+            <span class="status-label">Статус бэкенда</span>
+            <span class="status-value warn">endpoint не доступен</span>
+          </div>`;
+        return;
+      }
+      const alchemy = st.alchemy_configured
+        ? '<span class="status-value ok">✓ подключён</span>'
+        : '<span class="status-value off">публичные RPC</span>';
+      const rpc = Number(st.rpc_chain_count || 0);
+      box.innerHTML = `
+        <div class="status-row">
+          <span class="status-label">Alchemy RPC (бэкенд)</span>
+          ${alchemy}
+        </div>
+        <div class="status-row">
+          <span class="status-label">Поддержка сетей</span>
+          <span class="status-value ok">${rpc} EVM чейнов</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Версия бэкенда</span>
+          <span class="status-value off">${escapeHtml(st.version || 'unknown')}</span>
+        </div>`;
+    });
+  }
+
+  // Wire up buttons
+  $('amlOpenBtn').addEventListener('click', () => {
+    // Пред-заполняем текущим адресом в input'е — часто хочешь проверить именно его
+    const cur = ($('addrInput').value || '').trim();
+    openAmlModal(/^0x[0-9a-fA-F]{40}$/.test(cur) ? cur : '');
+  });
+  $('settingsOpenBtn').addEventListener('click', openSettingsModal);
 
   // ============== Health Factor monitoring ==========================
   // Watches Aave/Spark/Compound positions across all chains. Two thresholds:

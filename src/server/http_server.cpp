@@ -158,6 +158,21 @@ HttpServer::HttpServer(ServerDeps deps, ServeOptions opts)
         res.set_content("{\"ok\":true}", "application/json");
     });
 
+    // Public configuration status — для Settings-страницы в UI.
+    // Отдаёт ТОЛЬКО safe-to-expose инфу: сколько сетей поддерживается,
+    // настроен ли Alchemy (без самого ключа), версия. Для секретов — nope.
+    srv.Get("/api/config/status", [this](const httplib::Request&, httplib::Response& res) {
+        nlohmann::json j;
+        j["version"] = "0.1.0";
+        j["rpc_chain_count"] = impl_->deps.registry ?
+            static_cast<int>(impl_->deps.registry->chains().size()) : 0;
+        // Alchemy пока не интегрирован в бэкенд — публичные RPC из chains.json.
+        // Когда появится — читаем config/settings.json и проверяем ключ.
+        j["alchemy_configured"] = false;
+        j["rpc_source"] = "public";
+        res.set_content(j.dump(), "application/json");
+    });
+
     // Expose chains/tokens for UI dropdowns.
     srv.Get("/api/registry", [this](const httplib::Request&, httplib::Response& res) {
         if (!impl_->deps.registry) {
