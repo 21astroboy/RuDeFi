@@ -1,196 +1,181 @@
 <div align="center">
 
+<img src="ui/icon.svg" width="80" height="80" alt="RuDeFi logo" />
+
 # RuDeFi
 
-**Multichain DeFi dashboard · self-hostable · wallet-first**
+### Your onchain workspace for P2P crypto workflows.
 
-Scan 11 EVM chains, bridge between them, discover yield, manage approvals — in one PWA that runs on your own VPS, no custodian, no tracking, no accounts.
+**Track wallets. Check addresses. Swap tokens. Move across chains.**
 
-[Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Quick deploy](#quick-deploy) · [API](#api) · [Русский](README.ru.md)
+An open-source, Russian-language DeFi dashboard with MetaMask signing,
+11 EVM networks, and a lightweight C++ backend.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-6ea8fe.svg)](LICENSE)
+[![Checks](https://github.com/21astroboy/RuDeFi/actions/workflows/checks.yml/badge.svg)](https://github.com/21astroboy/RuDeFi/actions/workflows/checks.yml)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-8247e5)
+![Vanilla JavaScript](https://img.shields.io/badge/Frontend-Vanilla_JS-f0c674)
+
+[Русский](README.ru.md) · [Features](#built-for-the-onchain-side-of-p2p) · [Preview](#preview) · [Development](#local-development) · [Contribute](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## What it is
+## Built for the onchain side of P2P
 
-A small, fast, open-source alternative to Zerion / DeBank / Zapper that **you host yourself**. The backend is stateless C++ — it talks to public RPCs, CoinGecko, LiFi and DeFiLlama on your behalf and renders JSON. The frontend is a single HTML file with a service worker; it installs as a PWA on iPhone / Android.
+P2P workflows often span several wallets, tokens, networks, and explorers. RuDeFi brings the onchain tools together: review a wallet, inspect address-risk signals, find a swap or bridge route, and check token approvals.
 
-Designed for P2P traders and anyone managing more than one wallet across more than one chain.
+**RuDeFi is currently a wallet and DeFi toolkit.** It does not provide a fiat order book, counterparty matching, escrow, payment verification, or dispute resolution.
 
-## Features
+| Tool | What you can do |
+| :--- | :--- |
+| **Portfolio** | View native coins, configured ERC-20 tokens, and supported DeFi positions across 11 networks. See values in USD and RUB. |
+| **Wallet book** | Label addresses, keep a watchlist, switch between portfolios, and export holdings to CSV. |
+| **Address & token checks** | Review GoPlus risk signals for a counterparty address or token. Missing signals do not prove an address is safe. |
+| **Swaps** | Compare LI.FI routes for exchanging tokens within one network. |
+| **Bridges** | Compare LI.FI routes for moving tokens between different networks, with estimated gas and duration. |
+| **Approvals** | Inspect allowances for configured tokens and known spenders; submit revocations through MetaMask. |
+| **DeFi & yield** | View supported Aave V3, Spark, Compound V3, and Uniswap V3 positions; explore yield data from DeFiLlama. Coverage depends on network configuration. |
+| **History** | Load normal transactions, ERC-20 transfers, or internal transactions through Etherscan V2, with an explorer link when a request fails. |
 
-### Portfolio
-- **11 EVM chains** out of the box — Ethereum, Arbitrum, Optimism, Base, Polygon, BNB Chain, Avalanche, Gnosis, Linea, Scroll, Blast.
-- **Everything in one scan** — native coins, ERC-20 balances, Aave V3 / Spark / Compound V3 supply & borrow positions, Uniswap V3 LP positions.
-- **Live FX** — portfolio value in USD and RUB (CBR daily reference rate), per-token allocation bars.
-- **Idle-money banner** — tells you how much you could earn by moving idle balances into the best-APY pool on the same chain.
+## Preview
 
-### Wallet book
-- **Save multiple wallets** with human-readable labels and a color dot (Hot / Trading / Cold / DeFi / Payroll…).
-- **One-click switch** between labeled wallets. Labels stay with you — nothing is sent to any server.
-- **CSV export** of the current portfolio for bookkeeping (UTF-8 BOM, `;`-separated so Excel in RU/EU locales opens it clean).
+![RuDeFi swaps interface](docs/screenshots/swaps.png)
 
-### Bridges & swaps
-- **LiFi routing** — the aggregator fans your trade across 15+ bridges and 20+ DEXes to find the cheapest+fastest path.
-- **Pre-flight gas** and estimated time quoted in USD/RUB.
-- **Same-wallet or cross-wallet destination** — the input accepts any 0x address.
+*Actual application interface. Swaps and Bridges are separate sections, each retaining its own form inputs.*
 
-### Yield scanner
-- Pulls DeFiLlama's full pool list (~10k pools) and filters client-side on your criteria: minimum TVL, minimum APY, stablecoins-only, no-IL, single-exposure, specific tokens, specific chains.
-- **"My tokens only" mode** suggests pools you can enter without first buying something else.
+## A practical workflow
 
-### Approvals manager
-- Scans known DEX / bridge spenders across all chains for ERC-20 allowances you've granted.
-- **GoPlus token check** on every row flags honeypots, blacklist functions, mintable supply, proxy upgrades.
-- Revoke directly via MetaMask with one click.
+1. **Review an address.** Paste an EVM address to inspect a portfolio, or connect MetaMask to use your own account.
+2. **Check the counterparty.** Open the address check to review available risk signals before deciding how to proceed.
+3. **Choose the network.** Use **Swaps** for a same-chain exchange or **Bridges** to move between networks.
+4. **Review and sign.** Check the route, amount, gas, and wallet request. Signing happens in MetaMask.
+5. **Keep track.** Review allowances and history; export holdings when you need a portfolio snapshot.
 
-### Transaction history (Etherscan V2)
-- Last 50 operations per chain — normal / ERC-20 / internal — color-coded in/out with amount and counterparty.
-- One free Etherscan API key covers all 11 chains (Universal API). Key is stored only in your browser.
+An address scan or risk signal is supporting information, not proof that a counterparty or fiat payment is legitimate.
 
-### Mobile / PWA
-- `manifest.webmanifest` + service worker + apple-touch-icon → **"Add to Home Screen"** gives a native-feeling app with no address bar.
-- Responsive down to 320px. Works inside MetaMask Mobile's in-app browser so transactions sign on-device.
+## Wallets & mobile
 
-### Alerts
-- Health-Factor monitor for Aave / Spark / Compound positions — browser notification + audio cue when HF drops below 1.5 (warning) or 1.1 (danger).
+**Desktop:** connect the MetaMask extension. EIP-6963 discovery prioritizes MetaMask when multiple wallets are installed.
 
-## Screenshots
+**Mobile:** tap **Connect MetaMask**, then **Open in MetaMask** if the browser has no wallet provider. Continue inside MetaMask Mobile's browser and connect there. This opens a new browser context; it does not create a remote wallet session in Safari or Chrome.
 
-<table>
-  <tr>
-    <td align="center"><strong>Portfolio</strong></td>
-    <td align="center"><strong>Transactions</strong></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/portfolio.svg" alt="Portfolio view"/></td>
-    <td><img src="docs/screenshots/transactions.svg" alt="Transactions view"/></td>
-  </tr>
-  <tr>
-    <td align="center"><strong>Bridges / Swaps</strong></td>
-    <td align="center"><strong>Yield scanner</strong></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/bridges.svg" alt="Bridges view"/></td>
-    <td><img src="docs/screenshots/yield.svg" alt="Yield view"/></td>
-  </tr>
-</table>
+The responsive interface includes a PWA manifest and service worker. Cached application files can be available offline; balances, quotes, checks, and transactions require a network connection.
 
-<div align="center">
-  <strong>Mobile PWA (installed via "Add to Home Screen")</strong><br/>
-  <img src="docs/screenshots/mobile.svg" alt="Mobile PWA" width="300"/>
-</div>
+## API keys
 
-## Architecture
+| Feature | Do users need to enter a key? |
+| :--- | :--- |
+| Portfolio, gas, address/token checks, yield | **No.** Uses configured public RPCs and external data services. |
+| Swaps & bridges | **No.** LI.FI supports unauthenticated requests, subject to rate limits. |
+| Transaction history inside the app | **Yes.** An Etherscan V2 key is required; network access depends on its plan. |
+| Viewing history in a block explorer | **No app API key.** Open the explorer link. |
 
-![Architecture](docs/architecture.svg)
+Executing a swap, bridge, or revocation requires a connected wallet and sufficient funds for the operation and network gas. External services can be unavailable or rate-limited. Backend requests share the server's upstream limits; see [LI.FI's rate-limit documentation](https://docs.li.fi/api-reference/rate-limits).
 
-**Design choices:**
+## Supported networks
 
-- **Stateless backend.** No database, no sessions, no user accounts. One `/api/scan` call is self-contained; horizontal scaling is just more copies of the same binary.
-- **One C++ process.** The whole backend is a single `cryptoapp` binary built with CMake. All HTTP calls (RPCs, CoinGecko, LiFi, DeFiLlama, CBR, GoPlus) go through one libcurl pool.
-- **Static frontend.** The UI is one `index.html` + a tiny service worker. No build step, no framework — paste into a CDN and it works. The service worker only caches shell files and bypasses `/api/*`.
-- **Transaction history runs client-side.** The browser calls Etherscan V2 directly with the user's key. This keeps API keys out of a public deploy and lets you add the feature without touching the server.
-- **No custody.** All signing happens in the user's wallet. The backend never sees a private key.
+**Ethereum · Arbitrum · Optimism · Base · Polygon · BNB Chain · Avalanche · Gnosis · Linea · Scroll · Blast**
 
-**Resource footprint on a typical scan:**
+Network and token coverage is defined in [`config/chains.json`](config/chains.json) and [`config/tokens.json`](config/tokens.json). The scanner uses configured token and protocol lists; it is not an exhaustive index of every asset or position on an address.
 
-| Resource | Idle | Scanning |
-|---|---|---|
-| RAM (app container) | 50 MB | 100–150 MB |
-| CPU (app container) | <1% | 15–40% for 2–4 s |
-| Outbound requests | 0 | ~80–200 (multicalled) |
+## How it works
 
-Comfortably fits inside a €4/mo Hetzner CX22 (2 vCPU, 4 GB RAM) with room to spare.
-
-## Quick deploy
-
-Full step-by-step guide: **[`DEPLOY.md`](DEPLOY.md)** (English) · [`DEPLOY-VPS.md`](DEPLOY-VPS.md) (Russian). Two paths:
-
-### A) Fresh VPS with no other apps — full stack
-
-```bash
-git clone https://github.com/21astroboy/RuDeFi.git && cd RuDeFi
-DOMAIN=rudefi.example.com EMAIL=you@gmail.com ./deploy.sh
+```mermaid
+flowchart LR
+    UI[Browser / PWA] --> API[RuDeFi C++ API]
+    UI --> MM[MetaMask · transaction signing]
+    UI --> ES[Etherscan V2 · history]
+    UI --> GP[GoPlus · address checks]
+    API --> RPC[EVM RPCs · balances and positions]
+    API --> DATA[LI.FI · DeFiLlama · CoinGecko · FX data · GoPlus]
 ```
 
-Spins up `app` + `nginx` + `certbot`, gets a Let's Encrypt cert, serves `https://rudefi.example.com`. Takes 5–7 minutes end-to-end.
+- **Backend:** C++20, CMake, libcurl, Boost.Multiprecision, cpp-httplib, nlohmann/json, CLI11. No user database; external data and route quotes are cached in memory.
+- **Frontend:** HTML, CSS, and vanilla JavaScript. No frontend bundler or framework required.
+- **Wallet boundary:** private keys and signing stay in the wallet. The API builds unsigned transaction requests.
+- **Browser storage:** saved addresses, wallet labels, preferences, and the Etherscan key are stored locally. The key is sent directly to Etherscan when requesting history.
+- **External data:** scans and checks send requested addresses to the relevant RPC or data service. Local storage does not make those requests anonymous.
 
-### B) VPS where other apps already own 80/443
+### Current boundaries
 
-```bash
-git clone https://github.com/21astroboy/RuDeFi.git && cd RuDeFi
-./deploy-standalone.sh
-```
+- The interface is currently in Russian and supports EVM addresses.
+- In-app route execution supports **one LI.FI step**. Multi-step routes are displayed but cannot be executed in the app.
+- Approval scans cover known spenders; they are not a complete allowance audit.
+- Risk checks depend on upstream coverage. An empty result or a positive indicator is not a guarantee.
+- Quotes, fees, balances, APYs, and exchange rates are estimates or snapshots and can change.
+- This is an experimental application for real wallet interactions. Review transaction details before signing; there is no end-to-end guarantee from the automated tests.
 
-Starts the backend on `127.0.0.1:8080`, your existing nginx proxies to it. Drop `nginx-snippet.conf` into `sites-available/`, run `certbot --nginx -d rudefi.yourdomain` and you're done.
+## Local development
 
-### C) Local development
+Requirements: a C++20 compiler, CMake 3.20+, Git, libcurl development files, Boost 1.74+, and Node.js 22+ for the JavaScript tests.
 
-```bash
-# macOS
-brew install cmake boost curl
-cmake -B build && cmake --build build -j
-./build/cryptoapp serve --port 8787
+<details>
+<summary><strong>Install build dependencies</strong></summary>
 
-# Linux (Ubuntu 22.04+)
-sudo apt install -y build-essential cmake libcurl4-openssl-dev libboost-dev
-cmake -B build && cmake --build build -j
-./build/cryptoapp serve --port 8787
-```
-
-Open `http://127.0.0.1:8787`.
-
-### Optional: Alchemy
-
-Public RPCs work out of the box but throttle under load. If you expect more than one active user, add your Alchemy key:
+macOS with Homebrew:
 
 ```bash
-cp config/settings.example.json config/settings.json
-# edit alchemy_api_key = "..."
+brew install cmake boost curl node
 ```
 
-Alchemy's free tier (30M CU/month) is enough for ~100 active portfolio users.
+Ubuntu:
 
-## API
+```bash
+sudo apt-get update
+sudo apt-get install build-essential cmake git libcurl4-openssl-dev libboost-dev
+```
 
-Base URL: `/api` on the backend (default `http://127.0.0.1:8787`).
+Install Node.js separately if it is not already available.
 
-| Endpoint | What it does |
-|---|---|
-| `GET /api/healthz` | Liveness probe for nginx / monitoring |
-| `GET /api/registry` | Chains + supported tokens (for UI dropdowns) |
-| `GET /api/scan?wallet=0x…` | Portfolio scan across 11 chains, incl. DeFi positions |
-| `GET /api/gas` | Live gas snapshot per chain |
-| `GET /api/bridge/quote?from_chain=…&to_chain=…&from_token=…&to_token=…&amount=…&from_address=…` | LiFi route quote |
-| `GET /api/bridge/build-tx?…` | Build the signed transaction payload |
-| `GET /api/bridge/status?tx_hash=…` | Cross-chain tx status |
-| `GET /api/yield/scan?symbols=…&chains=…&min_tvl=…&min_apy=…&stable_only=1` | DeFiLlama yield search |
-| `GET /api/approvals?wallet=0x…` | ERC-20 allowances across known spenders |
-| `GET /api/security/token?chain=…&address=0x…` | GoPlus rug / honeypot check |
+</details>
 
-All responses are JSON. The backend doesn't require authentication — put nginx-level IP allowlisting in front if you want to restrict access.
+```bash
+git clone https://github.com/21astroboy/RuDeFi.git
+cd RuDeFi
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 2
+./build/cryptoapp serve --bind 127.0.0.1 --port 8787
+```
 
-## Tech stack
+Open [localhost:8787](http://127.0.0.1:8787). Run the binary from the repository root so it can find `config/` and `ui/`. The internal executable name is still `cryptoapp`.
 
-- **Backend:** C++20, [cpp-httplib](https://github.com/yhirose/cpp-httplib), [nlohmann/json](https://github.com/nlohmann/json), [CLI11](https://github.com/CLIUtils/CLI11), libcurl. All fetched via CMake `FetchContent` on first build (~30 MB download).
-- **Frontend:** vanilla JS, no framework, no build step. ~4000 LOC in one HTML file.
-- **Infra:** Docker + docker-compose, nginx reverse proxy, Let's Encrypt (certbot).
-- **Build:** CMake 3.20+, GCC 11+ / Clang 14+ / Apple Clang 14+. Builds on first run in a Docker container; ~3–7 min cold, under a minute warm.
+CMake downloads its declared header dependencies on first configuration. No wallet or API key is required to start the application.
 
-## Credits
+Run the regression checks from the repository root:
 
-Open data from [LiFi](https://li.fi) (bridges), [DeFiLlama](https://defillama.com) (yields), [CoinGecko](https://coingecko.com) (prices), [GoPlus](https://gopluslabs.io) (token security), [Central Bank of Russia](https://cbr.ru) (USD→RUB rate), [Trust Wallet assets](https://github.com/trustwallet/assets) (token icons), [Etherscan](https://etherscan.io) (transaction history).
+```bash
+node --test tests/*.cjs
+node --check ui/sw.js
+```
 
-Public RPC endpoints courtesy of [Chainlist](https://chainlist.org) and the individual chain foundations.
+These checks simulate wallet providers and API responses. They do not send transactions or replace testing with a real wallet on desktop and mobile.
+
+## Contributing
+
+Bug reports, translations, accessibility improvements, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); use [Issues](https://github.com/21astroboy/RuDeFi/issues) for reproducible bugs and feature proposals.
+
+For security-sensitive reports, follow [SECURITY.md](SECURITY.md). Do not include API keys, recovery phrases, or private keys in issues or screenshots.
+
+### Areas for contribution
+
+These are future directions, not currently available features:
+
+- Broader wallet and mobile browser test coverage.
+- Better route lifecycle handling, recovery, and multi-step execution.
+- More complete transaction-history coverage and allowance discovery.
+- Modular frontend code, accessibility, and interface translations.
+- P2P workflow tools such as counterparty notes and trade records, with an explicit privacy model.
+
+## Data & acknowledgements
+
+[LI.FI](https://li.fi) · [DeFiLlama](https://defillama.com) · [CoinGecko](https://www.coingecko.com) · [GoPlus](https://gopluslabs.io) · [Etherscan](https://etherscan.io)
+
+Powered by Etherscan.io APIs for transaction history. RUB conversion uses CBR reference-rate data distributed by [CBR XML Daily](https://www.cbr-xml-daily.ru). Token artwork comes from [Trust Wallet Assets](https://github.com/trustwallet/assets). Network data uses the RPC endpoints listed in the configuration.
+
+RuDeFi is an independent project, not affiliated with these providers. Third-party data, services, and assets remain subject to their respective terms and licenses.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE). Dependencies retain their own licenses (all permissive).
-
----
-
-<div align="center">
-<sub>Not affiliated with any of the above services. Not financial advice. If it burns your money that's on you — it's a self-hosted wallet dashboard, not a bank.</sub>
-</div>
+RuDeFi source code is available under the [MIT License](LICENSE).

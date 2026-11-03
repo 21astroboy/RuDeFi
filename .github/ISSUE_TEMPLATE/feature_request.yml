@@ -1,0 +1,22 @@
+name: Feature request / Предложение
+description: Describe a workflow RuDeFi could improve.
+title: '[Feature] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow / Задача или сценарий
+      description: What are you trying to do, and what is missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior / Предлагаемое поведение
+    validations:
+      required: true
+  - type: textarea
+    id: considerations
+    attributes:
+      label: Alternatives and privacy considerations / Альтернативы и приватность
+      description: Note any new external services, wallet permissions, or stored personal data.

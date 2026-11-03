@@ -1,0 +1,31 @@
+name: Bug report / Ошибка
+description: Report a reproducible problem. Never include private keys or API keys.
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 'English and Russian are welcome. For vulnerabilities, read SECURITY.md before posting details.'
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior / Ожидание и результат
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce / Как повторить
+      description: Use a disposable address. Redact personal data, keys, and authenticated URLs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / Окружение
+      description: Browser, OS, MetaMask version, network, and commit if known.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted screenshot or error / Скриншот или ошибка без секретов
